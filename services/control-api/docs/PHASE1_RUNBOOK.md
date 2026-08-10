@@ -1,5 +1,11 @@
 # Phase 1 Runbook: Conductor Control API
 
+> Note (Phase 2): run endpoints now require a bearer token, not an
+> `X-Tenant-Id` header. The header examples below are superseded by the
+> auth flow in `PHASE2_AUTH.md`. Obtain a token there, then send
+> `Authorization: Bearer <token>`.
+
+
 This runbook covers setting up, running, testing, and verifying the Phase 1
 control-plane service. It is scoped to Phase 1. When Phase 2 replaces the
 `X-Tenant-Id` header with JWT authentication, the request examples here will

@@ -7,7 +7,7 @@ import pytest
 from app.application.run.command_handlers import CancelRunHandler, CreateRunHandler
 from app.application.run.commands import CancelRun, CreateRun
 from app.domain.run.errors import RunNotFoundError
-from app.infrastructure.persistence.in_memory import InMemoryUnitOfWork
+from app.infrastructure.persistence.in_memory import InMemoryDatabase, InMemoryUnitOfWork
 
 
 class _CapturingPublisher:
@@ -19,17 +19,17 @@ class _CapturingPublisher:
 
 
 @pytest.fixture
-def store() -> dict:
-    return {}
+def db() -> InMemoryDatabase:
+    return InMemoryDatabase()
 
 
 @pytest.fixture
-def uow_factory(store):
-    return lambda: InMemoryUnitOfWork(store)
+def uow_factory(db):
+    return lambda: InMemoryUnitOfWork(db)
 
 
 @pytest.mark.asyncio
-async def test_create_run_persists_and_publishes(uow_factory, store) -> None:
+async def test_create_run_persists_and_publishes(uow_factory, db) -> None:
     publisher = _CapturingPublisher()
     handler = CreateRunHandler(uow_factory, publisher)
     tenant_id = str(uuid.uuid4())
@@ -37,7 +37,7 @@ async def test_create_run_persists_and_publishes(uow_factory, store) -> None:
     dto = await handler.handle(CreateRun(tenant_id=tenant_id, goal="Draft release notes"))
 
     assert dto.status == "queued"
-    assert len(store) == 1
+    assert len(db.runs) == 1
     assert len(publisher.published) == 1
 
 
@@ -75,6 +75,4 @@ async def test_cancel_missing_run_raises(uow_factory) -> None:
     publisher = _CapturingPublisher()
     handler = CancelRunHandler(uow_factory, publisher)
     with pytest.raises(RunNotFoundError):
-        await handler.handle(
-            CancelRun(tenant_id=str(uuid.uuid4()), run_id=str(uuid.uuid4()))
-        )
+        await handler.handle(CancelRun(tenant_id=str(uuid.uuid4()), run_id=str(uuid.uuid4())))

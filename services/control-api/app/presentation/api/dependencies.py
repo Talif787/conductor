@@ -7,11 +7,20 @@ from typing import Annotated
 
 from fastapi import Depends, Header, Query, Request
 
+from app.application.auth.command_handlers import (
+    LoginHandler,
+    LogoutHandler,
+    RefreshTokensHandler,
+    RegisterTenantHandler,
+)
+from app.application.auth.ports import AccessTokenService, PasswordHasher
+from app.application.auth.principal import Principal
 from app.application.ports import EventPublisher, UnitOfWork
 from app.application.run.command_handlers import CancelRunHandler, CreateRunHandler
 from app.application.run.query_handlers import GetRunHandler, ListRunsHandler
 from app.config.settings import AppSettings, get_settings
-from app.domain.run.value_objects import TenantId
+from app.domain.identity.errors import AuthenticationError, PermissionDeniedError
+from app.domain.identity.roles import Permission
 from app.infrastructure.persistence.unit_of_work import SqlAlchemyUnitOfWork
 
 UnitOfWorkFactory = Callable[[], UnitOfWork]
@@ -35,6 +44,17 @@ def provide_publisher(request: Request) -> EventPublisher:
     return publisher
 
 
+def provide_password_hasher(request: Request) -> PasswordHasher:
+    hasher: PasswordHasher = request.app.state.password_hasher
+    return hasher
+
+
+def provide_token_service(request: Request) -> AccessTokenService:
+    service: AccessTokenService = request.app.state.token_service
+    return service
+
+
+# --- run handlers ---
 def provide_create_run_handler(
     uow_factory: Annotated[UnitOfWorkFactory, Depends(provide_uow_factory)],
     publisher: Annotated[EventPublisher, Depends(provide_publisher)],
@@ -61,17 +81,60 @@ def provide_list_runs_handler(
     return ListRunsHandler(uow_factory)
 
 
-def get_current_tenant(
-    x_tenant_id: Annotated[str | None, Header(alias="X-Tenant-Id")] = None,
-) -> TenantId:
-    """Resolve the tenant for the request.
+# --- auth handlers ---
+def provide_register_handler(
+    uow_factory: Annotated[UnitOfWorkFactory, Depends(provide_uow_factory)],
+    hasher: Annotated[PasswordHasher, Depends(provide_password_hasher)],
+    tokens: Annotated[AccessTokenService, Depends(provide_token_service)],
+    settings: Annotated[AppSettings, Depends(provide_settings)],
+) -> RegisterTenantHandler:
+    return RegisterTenantHandler(uow_factory, hasher, tokens, settings.auth.refresh_ttl_seconds)
 
-    Phase 1 seam: tenant identity comes from a header. Phase 2 replaces this
-    single provider with JWT-derived tenancy without touching any handler.
-    """
-    if not x_tenant_id:
-        raise ValueError("missing required X-Tenant-Id header")
-    return TenantId.parse(x_tenant_id)
+
+def provide_login_handler(
+    uow_factory: Annotated[UnitOfWorkFactory, Depends(provide_uow_factory)],
+    hasher: Annotated[PasswordHasher, Depends(provide_password_hasher)],
+    tokens: Annotated[AccessTokenService, Depends(provide_token_service)],
+    settings: Annotated[AppSettings, Depends(provide_settings)],
+) -> LoginHandler:
+    return LoginHandler(uow_factory, hasher, tokens, settings.auth.refresh_ttl_seconds)
+
+
+def provide_refresh_handler(
+    uow_factory: Annotated[UnitOfWorkFactory, Depends(provide_uow_factory)],
+    tokens: Annotated[AccessTokenService, Depends(provide_token_service)],
+    settings: Annotated[AppSettings, Depends(provide_settings)],
+) -> RefreshTokensHandler:
+    return RefreshTokensHandler(uow_factory, tokens, settings.auth.refresh_ttl_seconds)
+
+
+def provide_logout_handler(
+    uow_factory: Annotated[UnitOfWorkFactory, Depends(provide_uow_factory)],
+) -> LogoutHandler:
+    return LogoutHandler(uow_factory)
+
+
+# --- authentication and authorization ---
+def get_current_principal(
+    token_service: Annotated[AccessTokenService, Depends(provide_token_service)],
+    authorization: Annotated[str | None, Header()] = None,
+) -> Principal:
+    if not authorization or not authorization.lower().startswith("bearer "):
+        raise AuthenticationError("missing bearer token")
+    token = authorization[len("bearer ") :].strip()
+    return token_service.decode(token)
+
+
+CurrentPrincipal = Annotated[Principal, Depends(get_current_principal)]
+
+
+def require_permission(permission: Permission) -> Callable[[Principal], Principal]:
+    def dependency(principal: CurrentPrincipal) -> Principal:
+        if not principal.has_permission(permission):
+            raise PermissionDeniedError(permission.value)
+        return principal
+
+    return dependency
 
 
 def get_page_params(
@@ -83,5 +146,4 @@ def get_page_params(
     return min(effective, settings.max_page_size), cursor
 
 
-CurrentTenant = Annotated[TenantId, Depends(get_current_tenant)]
 PageParams = Annotated[tuple[int, str | None], Depends(get_page_params)]

@@ -6,6 +6,8 @@ import uuid
 from dataclasses import dataclass
 from enum import StrEnum
 
+from app.domain.shared.identifiers import TenantId as TenantId  # re-exported shared identifier
+
 MAX_GOAL_LENGTH = 8000
 
 
@@ -27,18 +29,6 @@ class Priority(StrEnum):
     LOW = "low"
     NORMAL = "normal"
     HIGH = "high"
-
-
-@dataclass(frozen=True, slots=True)
-class TenantId:
-    value: uuid.UUID
-
-    @staticmethod
-    def parse(raw: str) -> TenantId:
-        return TenantId(uuid.UUID(raw))
-
-    def __str__(self) -> str:
-        return str(self.value)
 
 
 @dataclass(frozen=True, slots=True)
