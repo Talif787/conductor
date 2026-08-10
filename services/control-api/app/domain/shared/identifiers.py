@@ -104,3 +104,27 @@ class WorkflowVersionId:
 
     def __str__(self) -> str:
         return str(self.value)
+
+
+@dataclass(frozen=True, slots=True)
+class RunExecutionId:
+    value: uuid.UUID
+
+    @staticmethod
+    def new() -> RunExecutionId:
+        return RunExecutionId(uuid.uuid4())
+
+    def __str__(self) -> str:
+        return str(self.value)
+
+
+@dataclass(frozen=True, slots=True)
+class StepExecutionId:
+    value: uuid.UUID
+
+    @staticmethod
+    def new() -> StepExecutionId:
+        return StepExecutionId(uuid.uuid4())
+
+    def __str__(self) -> str:
+        return str(self.value)

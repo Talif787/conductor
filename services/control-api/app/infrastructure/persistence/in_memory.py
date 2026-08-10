@@ -8,6 +8,8 @@ from dataclasses import dataclass, field
 from types import TracebackType
 
 from app.application.ports import UnitOfWork
+from app.domain.execution.entities import RunExecution
+from app.domain.execution.repository import RunExecutionRepository
 from app.domain.identity.entities import Membership, RefreshToken, Tenant, User
 from app.domain.identity.repository import (
     MembershipRepository,
@@ -40,6 +42,7 @@ class InMemoryDatabase:
     tools: dict[uuid.UUID, Tool] = field(default_factory=dict)
     workflows: dict[uuid.UUID, Workflow] = field(default_factory=dict)
     workflow_versions: dict[uuid.UUID, WorkflowVersion] = field(default_factory=dict)
+    run_executions: dict[uuid.UUID, RunExecution] = field(default_factory=dict)
 
 
 class InMemoryRunRepository(RunRepository):
@@ -154,6 +157,7 @@ class InMemoryUnitOfWork(UnitOfWork):
         self.tools = InMemoryToolRepository(self._db.tools)
         self.workflows = InMemoryWorkflowRepository(self._db.workflows)
         self.workflow_versions = InMemoryWorkflowVersionRepository(self._db.workflow_versions)
+        self.run_executions = InMemoryRunExecutionRepository(self._db.run_executions)
         return self
 
     async def __aexit__(
@@ -257,3 +261,17 @@ class InMemoryWorkflowVersionRepository(WorkflowVersionRepository):
     async def latest(self, tenant_id: TenantId, workflow_id: WorkflowId) -> WorkflowVersion | None:
         versions = await self.list_for_workflow(tenant_id, workflow_id)
         return max(versions, key=lambda v: v.version) if versions else None
+
+
+class InMemoryRunExecutionRepository(RunExecutionRepository):
+    def __init__(self, store: dict[uuid.UUID, RunExecution]) -> None:
+        self._store = store
+
+    async def add(self, execution: RunExecution) -> None:
+        self._store[execution.run_id.value] = execution
+
+    async def get(self, tenant_id: TenantId, run_id: RunId) -> RunExecution | None:
+        execution = self._store.get(run_id.value)
+        if execution is not None and execution.tenant_id == tenant_id:
+            return execution
+        return None
