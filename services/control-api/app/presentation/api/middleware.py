@@ -1,4 +1,5 @@
 """Correlation-id and request-logging/metrics middleware."""
+
 from __future__ import annotations
 
 import time
@@ -20,9 +21,7 @@ logger = structlog.get_logger("http")
 
 
 class ObservabilityMiddleware(BaseHTTPMiddleware):
-    async def dispatch(
-        self, request: Request, call_next: RequestResponseEndpoint
-    ) -> Response:
+    async def dispatch(self, request: Request, call_next: RequestResponseEndpoint) -> Response:
         correlation_id = request.headers.get(_CORRELATION_HEADER) or str(uuid.uuid4())
         bind_correlation_id(correlation_id)
         route = request.scope.get("route")

@@ -1,4 +1,5 @@
 """Framework-free data transfer objects returned by the application layer."""
+
 from __future__ import annotations
 
 from dataclasses import dataclass

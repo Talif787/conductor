@@ -1,12 +1,13 @@
 """HTTP endpoints for the Run resource."""
+
 from __future__ import annotations
 
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, Header, Query, Response, status
 
-from app.application.run.commands import CancelRun, CreateRun
 from app.application.run.command_handlers import CancelRunHandler, CreateRunHandler
+from app.application.run.commands import CancelRun, CreateRun
 from app.application.run.queries import GetRun, ListRuns
 from app.application.run.query_handlers import GetRunHandler, ListRunsHandler
 from app.presentation.api.dependencies import (
@@ -17,13 +18,11 @@ from app.presentation.api.dependencies import (
     provide_get_run_handler,
     provide_list_runs_handler,
 )
-from app.presentation.api.v1.schemas import (
-    CreateRunRequest,
-    PagedRunsResponse,
-    RunResponse,
-)
+from app.presentation.api.v1.schemas import CreateRunRequest, PagedRunsResponse, RunResponse
 
 router = APIRouter(prefix="/runs", tags=["runs"])
+
+_STATUS_PATTERN = "^(queued|planning|running|paused|completed|failed|cancelled)$"
 
 
 @router.post("", response_model=RunResponse, status_code=status.HTTP_201_CREATED)
@@ -63,7 +62,7 @@ async def list_runs(
     tenant: CurrentTenant,
     page: PageParams,
     handler: Annotated[ListRunsHandler, Depends(provide_list_runs_handler)],
-    run_status: Annotated[str | None, Query(alias="status", pattern="^(queued|planning|running|paused|completed|failed|cancelled)$")] = None,
+    run_status: Annotated[str | None, Query(alias="status", pattern=_STATUS_PATTERN)] = None,
 ) -> PagedRunsResponse:
     limit, cursor = page
     dto = await handler.handle(

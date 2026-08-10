@@ -1,10 +1,11 @@
 """The Run aggregate root and its state machine."""
+
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Any
 
-from app.domain.run.errors import InvalidStateTransition
+from app.domain.run.errors import InvalidStateTransitionError
 from app.domain.run.events import (
     DomainEvent,
     RunCancelled,
@@ -33,7 +34,7 @@ _ALLOWED_TRANSITIONS: dict[RunStatus, set[RunStatus]] = {
 
 
 def _utcnow() -> datetime:
-    return datetime.now(timezone.utc)
+    return datetime.now(UTC)
 
 
 class Run:
@@ -84,7 +85,7 @@ class Run:
         workflow_id: str | None = None,
         workflow_version: str | None = None,
         idempotency_key: str | None = None,
-    ) -> "Run":
+    ) -> Run:
         now = _utcnow()
         run = cls(
             id=RunId.new(),
@@ -120,7 +121,7 @@ class Run:
 
     def _transition(self, target: RunStatus) -> None:
         if target not in _ALLOWED_TRANSITIONS[self.status]:
-            raise InvalidStateTransition(self.status.value, target.value)
+            raise InvalidStateTransitionError(self.status.value, target.value)
         self.status = target
         self.updated_at = _utcnow()
 
@@ -139,9 +140,7 @@ class Run:
     def fail(self, reason: str) -> None:
         self._transition(RunStatus.FAILED)
         self.error = reason
-        self._record(
-            RunFailed(tenant_id=self.tenant_id.value, run_id=self.id.value, reason=reason)
-        )
+        self._record(RunFailed(tenant_id=self.tenant_id.value, run_id=self.id.value, reason=reason))
 
     def cancel(self) -> None:
         self._transition(RunStatus.CANCELLED)

@@ -36,4 +36,4 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Build image
-        run: docker build -t conductor-control-api:${{ github.sha }} services/control-api
+        run: docker build -t conductor-control-api:${{ github.sha }} .

@@ -39,3 +39,10 @@ docker compose up --build     # postgres, migrations, api on :8000
 Open the API docs at http://localhost:8000/docs and metrics at /metrics.
 
 See services/control-api/README.md for local development without Docker.
+
+## Documentation
+
+- CONTRIBUTING.md: branch strategy, commit conventions, and the quality gate.
+- docs/DEVELOPMENT_SETUP.md: Cloud Shell, GitHub, and Google Cloud (WIF) setup.
+- docs/ARCHITECTURE.md: code-level architecture for Phase 1.
+- services/control-api/docs/PHASE1_RUNBOOK.md: set up, run, and test Phase 1.

@@ -1,4 +1,5 @@
 """Write-side commands for the Run bounded context."""
+
 from __future__ import annotations
 
 from dataclasses import dataclass

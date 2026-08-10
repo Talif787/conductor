@@ -1,4 +1,5 @@
 """RFC 7807 problem+json error handling."""
+
 from __future__ import annotations
 
 import structlog
@@ -6,7 +7,7 @@ from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 
-from app.domain.run.errors import DomainError, InvalidStateTransition, RunNotFound
+from app.domain.run.errors import DomainError, InvalidStateTransitionError, RunNotFoundError
 
 logger = structlog.get_logger(__name__)
 
@@ -29,13 +30,13 @@ def _problem(status: int, title: str, detail: str, request: Request, kind: str) 
 
 
 def register_exception_handlers(app: FastAPI) -> None:
-    @app.exception_handler(RunNotFound)
-    async def _handle_not_found(request: Request, exc: RunNotFound) -> JSONResponse:
+    @app.exception_handler(RunNotFoundError)
+    async def _handle_not_found(request: Request, exc: RunNotFoundError) -> JSONResponse:
         return _problem(404, "Run not found", str(exc), request, "run-not-found")
 
-    @app.exception_handler(InvalidStateTransition)
+    @app.exception_handler(InvalidStateTransitionError)
     async def _handle_transition(
-        request: Request, exc: InvalidStateTransition
+        request: Request, exc: InvalidStateTransitionError
     ) -> JSONResponse:
         return _problem(409, "Invalid state transition", str(exc), request, "invalid-transition")
 
@@ -48,9 +49,7 @@ def register_exception_handlers(app: FastAPI) -> None:
         return _problem(400, "Domain rule violation", str(exc), request, "domain-error")
 
     @app.exception_handler(RequestValidationError)
-    async def _handle_validation(
-        request: Request, exc: RequestValidationError
-    ) -> JSONResponse:
+    async def _handle_validation(request: Request, exc: RequestValidationError) -> JSONResponse:
         return _problem(
             422, "Request validation failed", str(exc.errors()), request, "validation-error"
         )

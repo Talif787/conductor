@@ -1,4 +1,5 @@
 """OpenTelemetry tracing setup. Safe to call when no collector is configured."""
+
 from __future__ import annotations
 
 import structlog
@@ -7,9 +8,12 @@ from app.config.settings import ObservabilitySettings
 
 logger = structlog.get_logger(__name__)
 
+_instrumented = False
+
 
 def configure_tracing(settings: ObservabilitySettings, app: object, engine: object) -> None:
-    if not settings.traces_enabled:
+    global _instrumented
+    if not settings.traces_enabled or _instrumented:
         return
     try:
         from opentelemetry import trace
@@ -35,4 +39,5 @@ def configure_tracing(settings: ObservabilitySettings, app: object, engine: obje
     trace.set_tracer_provider(provider)
     FastAPIInstrumentor.instrument_app(app)  # type: ignore[arg-type]
     SQLAlchemyInstrumentor().instrument(engine=getattr(engine, "sync_engine", engine))
+    _instrumented = True
     logger.info("otel.configured", endpoint=settings.otlp_endpoint or "none")
