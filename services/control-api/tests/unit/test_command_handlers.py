@@ -75,4 +75,6 @@ async def test_cancel_missing_run_raises(uow_factory) -> None:
     publisher = _CapturingPublisher()
     handler = CancelRunHandler(uow_factory, publisher)
     with pytest.raises(RunNotFoundError):
-        await handler.handle(CancelRun(tenant_id=str(uuid.uuid4()), run_id=str(uuid.uuid4())))
+        await handler.handle(
+            CancelRun(tenant_id=str(uuid.uuid4()), run_id=str(uuid.uuid4()))
+        )
