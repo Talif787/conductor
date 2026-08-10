@@ -1,0 +1,22 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.env
+.env.*
+!.env.example
+.mypy_cache/
+.ruff_cache/
+.pytest_cache/
+dist/
+build/
+*.egg-info/
+
+# Credentials exported by google-github-actions/auth in CI
+gha-creds-*.json
+
+# OS / editor
+.DS_Store
+.idea/
+.vscode/
