@@ -1,4 +1,5 @@
 """PostgreSQL-backed implementation of the RunRepository port."""
+
 from __future__ import annotations
 
 import base64
@@ -79,8 +80,7 @@ class SqlAlchemyRunRepository(RunRepository):
         if page.cursor is not None:
             cursor_created_at, cursor_run_id = _decode_cursor(page.cursor)
             stmt = stmt.where(
-                tuple_(RunModel.created_at, RunModel.id)
-                < (cursor_created_at, cursor_run_id)
+                tuple_(RunModel.created_at, RunModel.id) < (cursor_created_at, cursor_run_id)
             )
         stmt = stmt.order_by(RunModel.created_at.desc(), RunModel.id.desc()).limit(page.limit + 1)
 

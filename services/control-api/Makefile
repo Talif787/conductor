@@ -1,4 +1,4 @@
-.PHONY: install run test lint typecheck fmt migrate up down build
+.PHONY: install run test test-integration lint typecheck fmt migrate up down build
 
 install:
 	pip install -e ".[dev]"
@@ -7,7 +7,10 @@ run:
 	uvicorn app.main:app --reload --port 8000
 
 test:
-	pytest
+	pytest -m "not integration"
+
+test-integration:
+	pytest -m integration
 
 lint:
 	ruff check .

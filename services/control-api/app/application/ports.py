@@ -6,6 +6,12 @@ import abc
 from collections.abc import Sequence
 from types import TracebackType
 
+from app.domain.identity.repository import (
+    MembershipRepository,
+    RefreshTokenRepository,
+    TenantRepository,
+    UserRepository,
+)
 from app.domain.run.events import DomainEvent
 from app.domain.run.repository import RunRepository
 
@@ -14,6 +20,10 @@ class UnitOfWork(abc.ABC):
     """Transactional boundary exposing the aggregate repositories."""
 
     runs: RunRepository
+    tenants: TenantRepository
+    users: UserRepository
+    memberships: MembershipRepository
+    refresh_tokens: RefreshTokenRepository
 
     async def __aenter__(self) -> UnitOfWork:
         return self
@@ -25,6 +35,9 @@ class UnitOfWork(abc.ABC):
         exc: BaseException | None,
         tb: TracebackType | None,
     ) -> None: ...
+
+    @abc.abstractmethod
+    async def flush(self) -> None: ...
 
     @abc.abstractmethod
     async def commit(self) -> None: ...

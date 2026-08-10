@@ -1,4 +1,4 @@
-"""SQLAlchemy-backed unit of work."""
+"""SQLAlchemy-backed unit of work spanning the run and identity contexts."""
 
 from __future__ import annotations
 
@@ -7,6 +7,12 @@ from types import TracebackType
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from app.application.ports import UnitOfWork
+from app.infrastructure.persistence.identity_repository import (
+    SqlAlchemyMembershipRepository,
+    SqlAlchemyRefreshTokenRepository,
+    SqlAlchemyTenantRepository,
+    SqlAlchemyUserRepository,
+)
 from app.infrastructure.persistence.run_repository import SqlAlchemyRunRepository
 
 
@@ -18,6 +24,10 @@ class SqlAlchemyUnitOfWork(UnitOfWork):
     async def __aenter__(self) -> SqlAlchemyUnitOfWork:
         self._session = self._session_factory()
         self.runs = SqlAlchemyRunRepository(self._session)
+        self.tenants = SqlAlchemyTenantRepository(self._session)
+        self.users = SqlAlchemyUserRepository(self._session)
+        self.memberships = SqlAlchemyMembershipRepository(self._session)
+        self.refresh_tokens = SqlAlchemyRefreshTokenRepository(self._session)
         return self
 
     async def __aexit__(
@@ -33,6 +43,10 @@ class SqlAlchemyUnitOfWork(UnitOfWork):
         finally:
             await self._session.close()
             self._session = None
+
+    async def flush(self) -> None:
+        assert self._session is not None
+        await self._session.flush()
 
     async def commit(self) -> None:
         assert self._session is not None

@@ -4,8 +4,10 @@ from __future__ import annotations
 
 from functools import lru_cache
 
-from pydantic import Field
+from pydantic import Field, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+_DEV_SECRET = "dev-insecure-change-me"  # noqa: S105
 
 
 class DatabaseSettings(BaseSettings):
@@ -27,6 +29,17 @@ class ObservabilitySettings(BaseSettings):
     traces_enabled: bool = True
 
 
+class AuthSettings(BaseSettings):
+    model_config = SettingsConfigDict(env_prefix="CONDUCTOR_AUTH_", extra="ignore")
+
+    secret: str = _DEV_SECRET
+    issuer: str = "conductor"
+    audience: str = "conductor-api"
+    algorithm: str = "HS256"
+    access_ttl_seconds: int = 900
+    refresh_ttl_seconds: int = 1209600
+
+
 class AppSettings(BaseSettings):
     model_config = SettingsConfigDict(env_prefix="CONDUCTOR_", extra="ignore")
 
@@ -39,10 +52,17 @@ class AppSettings(BaseSettings):
 
     database: DatabaseSettings = Field(default_factory=DatabaseSettings)
     observability: ObservabilitySettings = Field(default_factory=ObservabilitySettings)
+    auth: AuthSettings = Field(default_factory=AuthSettings)
 
     @property
     def is_production(self) -> bool:
         return self.environment.lower() == "production"
+
+    @model_validator(mode="after")
+    def _reject_default_secret_in_production(self) -> AppSettings:
+        if self.is_production and self.auth.secret == _DEV_SECRET:
+            raise ValueError("CONDUCTOR_AUTH_SECRET must be set in production")
+        return self
 
 
 @lru_cache
