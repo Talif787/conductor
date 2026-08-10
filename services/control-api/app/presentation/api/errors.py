@@ -7,6 +7,12 @@ from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 
+from app.domain.execution.errors import (
+    ExecutionError,
+    RunExecutionNotFoundError,
+    RunNotExecutableError,
+    ToolKindNotSupportedError,
+)
 from app.domain.identity.errors import (
     AuthenticationError,
     EmailAlreadyExistsError,
@@ -145,6 +151,26 @@ def register_exception_handlers(app: FastAPI) -> None:
     @app.exception_handler(WorkflowError)
     async def _handle_wf_error(request: Request, exc: WorkflowError) -> JSONResponse:
         return _problem(400, "Workflow error", str(exc), request, "workflow-error")
+
+    @app.exception_handler(RunNotExecutableError)
+    async def _handle_run_not_executable(
+        request: Request, exc: RunNotExecutableError
+    ) -> JSONResponse:
+        return _problem(409, "Run not executable", str(exc), request, "run-not-executable")
+
+    @app.exception_handler(RunExecutionNotFoundError)
+    async def _handle_execution_missing(
+        request: Request, exc: RunExecutionNotFoundError
+    ) -> JSONResponse:
+        return _problem(404, "Execution not found", str(exc), request, "execution-not-found")
+
+    @app.exception_handler(ToolKindNotSupportedError)
+    async def _handle_tool_kind(request: Request, exc: ToolKindNotSupportedError) -> JSONResponse:
+        return _problem(422, "Tool kind not supported", str(exc), request, "tool-kind-unsupported")
+
+    @app.exception_handler(ExecutionError)
+    async def _handle_execution_error(request: Request, exc: ExecutionError) -> JSONResponse:
+        return _problem(400, "Execution error", str(exc), request, "execution-error")
 
     @app.exception_handler(ValueError)
     async def _handle_value_error(request: Request, exc: ValueError) -> JSONResponse:

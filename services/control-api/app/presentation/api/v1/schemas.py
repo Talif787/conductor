@@ -208,3 +208,34 @@ class WorkflowResponse(BaseModel):
             updated_at=dto.updated_at,
             versions=[WorkflowVersionSummary(**asdict(v)) for v in dto.versions],
         )
+
+
+class StepExecutionResponse(BaseModel):
+    step_id: str
+    tool_id: str
+    position: int
+    status: str
+    output: dict[str, Any] | None
+    error: str | None
+    started_at: str | None
+    finished_at: str | None
+
+
+class RunExecutionResponse(BaseModel):
+    run_id: str
+    status: str
+    error: str | None
+    started_at: str
+    finished_at: str | None
+    steps: list[StepExecutionResponse]
+
+    @classmethod
+    def from_dto(cls, dto: Any) -> RunExecutionResponse:
+        return cls(
+            run_id=dto.run_id,
+            status=dto.status,
+            error=dto.error,
+            started_at=dto.started_at,
+            finished_at=dto.finished_at,
+            steps=[StepExecutionResponse(**asdict(s)) for s in dto.steps],
+        )

@@ -7,6 +7,9 @@ from types import TracebackType
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from app.application.ports import UnitOfWork
+from app.infrastructure.persistence.execution_repository import (
+    SqlAlchemyRunExecutionRepository,
+)
 from app.infrastructure.persistence.identity_repository import (
     SqlAlchemyMembershipRepository,
     SqlAlchemyRefreshTokenRepository,
@@ -36,6 +39,7 @@ class SqlAlchemyUnitOfWork(UnitOfWork):
         self.tools = SqlAlchemyToolRepository(self._session)
         self.workflows = SqlAlchemyWorkflowRepository(self._session)
         self.workflow_versions = SqlAlchemyWorkflowVersionRepository(self._session)
+        self.run_executions = SqlAlchemyRunExecutionRepository(self._session)
         return self
 
     async def __aexit__(

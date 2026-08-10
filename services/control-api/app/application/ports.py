@@ -6,6 +6,7 @@ import abc
 from collections.abc import Sequence
 from types import TracebackType
 
+from app.domain.execution.repository import RunExecutionRepository
 from app.domain.identity.repository import (
     MembershipRepository,
     RefreshTokenRepository,
@@ -32,6 +33,7 @@ class UnitOfWork(abc.ABC):
     tools: ToolRepository
     workflows: WorkflowRepository
     workflow_versions: WorkflowVersionRepository
+    run_executions: RunExecutionRepository
 
     async def __aenter__(self) -> UnitOfWork:
         return self

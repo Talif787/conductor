@@ -40,6 +40,23 @@ class AuthSettings(BaseSettings):
     refresh_ttl_seconds: int = 1209600
 
 
+class LLMSettings(BaseSettings):
+    model_config = SettingsConfigDict(env_prefix="CONDUCTOR_LLM_", extra="ignore")
+
+    provider: str = "fake"  # "fake" or "http"
+    base_url: str = "https://api.openai.com/v1"
+    api_key: str = ""
+    model: str = "conductor-default"
+    timeout_seconds: int = 30
+
+
+class ExecutionSettings(BaseSettings):
+    model_config = SettingsConfigDict(env_prefix="CONDUCTOR_EXEC_", extra="ignore")
+
+    engine: str = "local"
+    max_concurrency: int = 8
+
+
 class AppSettings(BaseSettings):
     model_config = SettingsConfigDict(env_prefix="CONDUCTOR_", extra="ignore")
 
@@ -53,6 +70,8 @@ class AppSettings(BaseSettings):
     database: DatabaseSettings = Field(default_factory=DatabaseSettings)
     observability: ObservabilitySettings = Field(default_factory=ObservabilitySettings)
     auth: AuthSettings = Field(default_factory=AuthSettings)
+    llm: LLMSettings = Field(default_factory=LLMSettings)
+    execution: ExecutionSettings = Field(default_factory=ExecutionSettings)
 
     @property
     def is_production(self) -> bool:

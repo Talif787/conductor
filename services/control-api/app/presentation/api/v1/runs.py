@@ -7,6 +7,10 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, Header, Query, Response, status
 
 from app.application.auth.principal import Principal
+from app.application.execution.command_handlers import ExecuteRunHandler
+from app.application.execution.commands import ExecuteRun
+from app.application.execution.queries import GetRunExecution
+from app.application.execution.query_handlers import GetRunExecutionHandler
 from app.application.run.command_handlers import CancelRunHandler, CreateRunHandler
 from app.application.run.commands import CancelRun, CreateRun
 from app.application.run.queries import GetRun, ListRuns
@@ -16,11 +20,18 @@ from app.presentation.api.dependencies import (
     PageParams,
     provide_cancel_run_handler,
     provide_create_run_handler,
+    provide_execute_run_handler,
+    provide_get_run_execution_handler,
     provide_get_run_handler,
     provide_list_runs_handler,
     require_permission,
 )
-from app.presentation.api.v1.schemas import CreateRunRequest, PagedRunsResponse, RunResponse
+from app.presentation.api.v1.schemas import (
+    CreateRunRequest,
+    PagedRunsResponse,
+    RunExecutionResponse,
+    RunResponse,
+)
 
 router = APIRouter(prefix="/runs", tags=["runs"])
 
@@ -81,3 +92,23 @@ async def cancel_run(
 ) -> RunResponse:
     dto = await handler.handle(CancelRun(tenant_id=str(principal.tenant_id), run_id=run_id))
     return RunResponse.from_dto(dto)
+
+
+@router.post("/{run_id}/execute", response_model=RunExecutionResponse)
+async def execute_run(
+    run_id: str,
+    principal: Annotated[Principal, Depends(require_permission(Permission.RUNS_EXECUTE))],
+    handler: Annotated[ExecuteRunHandler, Depends(provide_execute_run_handler)],
+) -> RunExecutionResponse:
+    dto = await handler.handle(ExecuteRun(tenant_id=str(principal.tenant_id), run_id=run_id))
+    return RunExecutionResponse.from_dto(dto)
+
+
+@router.get("/{run_id}/execution", response_model=RunExecutionResponse)
+async def get_run_execution(
+    run_id: str,
+    principal: Annotated[Principal, Depends(require_permission(Permission.RUNS_READ))],
+    handler: Annotated[GetRunExecutionHandler, Depends(provide_get_run_execution_handler)],
+) -> RunExecutionResponse:
+    dto = await handler.handle(GetRunExecution(tenant_id=str(principal.tenant_id), run_id=run_id))
+    return RunExecutionResponse.from_dto(dto)

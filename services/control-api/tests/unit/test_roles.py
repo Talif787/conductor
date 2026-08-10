@@ -38,3 +38,10 @@ def test_owner_and_admin_have_all_permissions() -> None:
 def test_permissions_are_the_union_of_roles() -> None:
     perms = permissions_for({Role.VIEWER, Role.OPERATOR})
     assert Permission.RUNS_CANCEL in perms
+
+
+def test_operator_can_execute_runs() -> None:
+    from app.domain.identity.roles import Permission, Role, permissions_for
+
+    assert Permission.RUNS_EXECUTE in permissions_for({Role.OPERATOR})
+    assert Permission.RUNS_EXECUTE in permissions_for({Role.OWNER})

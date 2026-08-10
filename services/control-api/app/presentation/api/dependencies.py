@@ -15,6 +15,9 @@ from app.application.auth.command_handlers import (
 )
 from app.application.auth.ports import AccessTokenService, PasswordHasher
 from app.application.auth.principal import Principal
+from app.application.execution.command_handlers import ExecuteRunHandler
+from app.application.execution.ports import ExecutionEngine, LLMGateway
+from app.application.execution.query_handlers import GetRunExecutionHandler
 from app.application.ports import EventPublisher, UnitOfWork
 from app.application.run.command_handlers import CancelRunHandler, CreateRunHandler
 from app.application.run.query_handlers import GetRunHandler, ListRunsHandler
@@ -34,6 +37,12 @@ from app.application.workflows.query_handlers import (
 from app.config.settings import AppSettings, get_settings
 from app.domain.identity.errors import AuthenticationError, PermissionDeniedError
 from app.domain.identity.roles import Permission
+from app.infrastructure.execution.local_engine import LocalExecutionEngine
+from app.infrastructure.execution.tool_invoker import (
+    BuiltinToolInvoker,
+    CompositeToolInvoker,
+)
+from app.infrastructure.llm.gateway import FakeLLMGateway, HttpLLMGateway
 from app.infrastructure.persistence.unit_of_work import SqlAlchemyUnitOfWork
 
 UnitOfWorkFactory = Callable[[], UnitOfWork]
@@ -228,3 +237,37 @@ def provide_list_workflows_handler(
     uow_factory: Annotated[UnitOfWorkFactory, Depends(provide_uow_factory)],
 ) -> ListWorkflowsHandler:
     return ListWorkflowsHandler(uow_factory)
+
+
+# --- execution handlers ---
+def provide_llm_gateway() -> LLMGateway:
+    settings = get_settings().llm
+    if settings.provider == "http":
+        return HttpLLMGateway(
+            base_url=settings.base_url,
+            api_key=settings.api_key,
+            model=settings.model,
+            timeout_seconds=settings.timeout_seconds,
+        )
+    return FakeLLMGateway()
+
+
+def provide_execution_engine(
+    llm: Annotated[LLMGateway, Depends(provide_llm_gateway)],
+) -> ExecutionEngine:
+    invoker = CompositeToolInvoker(BuiltinToolInvoker(llm))
+    return LocalExecutionEngine(invoker, max_concurrency=get_settings().execution.max_concurrency)
+
+
+def provide_execute_run_handler(
+    uow_factory: Annotated[UnitOfWorkFactory, Depends(provide_uow_factory)],
+    engine: Annotated[ExecutionEngine, Depends(provide_execution_engine)],
+    publisher: Annotated[EventPublisher, Depends(provide_publisher)],
+) -> ExecuteRunHandler:
+    return ExecuteRunHandler(uow_factory, engine, publisher)
+
+
+def provide_get_run_execution_handler(
+    uow_factory: Annotated[UnitOfWorkFactory, Depends(provide_uow_factory)],
+) -> GetRunExecutionHandler:
+    return GetRunExecutionHandler(uow_factory)
