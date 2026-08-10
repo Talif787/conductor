@@ -127,3 +127,17 @@ def register(client: TestClient) -> Callable[..., dict]:
 def auth_headers(register: Callable[..., dict]) -> dict[str, str]:
     tokens = register()
     return {"Authorization": f"Bearer {tokens['access_token']}"}
+
+
+@pytest.fixture
+def make_auth_headers(token_service: FakeTokenService):
+    def _make(roles, tenant_id=None, user_id=None) -> dict[str, str]:
+        principal = Principal(
+            user_id=user_id or UserId.new(),
+            tenant_id=tenant_id or TenantId.new(),
+            roles=frozenset(roles),
+        )
+        issued = token_service.issue(principal)
+        return {"Authorization": f"Bearer {issued.token}"}
+
+    return _make

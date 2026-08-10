@@ -14,6 +14,11 @@ from app.infrastructure.persistence.identity_repository import (
     SqlAlchemyUserRepository,
 )
 from app.infrastructure.persistence.run_repository import SqlAlchemyRunRepository
+from app.infrastructure.persistence.tools_repository import SqlAlchemyToolRepository
+from app.infrastructure.persistence.workflow_repository import (
+    SqlAlchemyWorkflowRepository,
+    SqlAlchemyWorkflowVersionRepository,
+)
 
 
 class SqlAlchemyUnitOfWork(UnitOfWork):
@@ -28,6 +33,9 @@ class SqlAlchemyUnitOfWork(UnitOfWork):
         self.users = SqlAlchemyUserRepository(self._session)
         self.memberships = SqlAlchemyMembershipRepository(self._session)
         self.refresh_tokens = SqlAlchemyRefreshTokenRepository(self._session)
+        self.tools = SqlAlchemyToolRepository(self._session)
+        self.workflows = SqlAlchemyWorkflowRepository(self._session)
+        self.workflow_versions = SqlAlchemyWorkflowVersionRepository(self._session)
         return self
 
     async def __aexit__(

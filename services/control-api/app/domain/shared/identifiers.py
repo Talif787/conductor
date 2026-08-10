@@ -60,3 +60,47 @@ class RefreshTokenId:
 
     def __str__(self) -> str:
         return str(self.value)
+
+
+@dataclass(frozen=True, slots=True)
+class ToolId:
+    value: uuid.UUID
+
+    @staticmethod
+    def new() -> ToolId:
+        return ToolId(uuid.uuid4())
+
+    @staticmethod
+    def parse(raw: str) -> ToolId:
+        return ToolId(uuid.UUID(raw))
+
+    def __str__(self) -> str:
+        return str(self.value)
+
+
+@dataclass(frozen=True, slots=True)
+class WorkflowId:
+    value: uuid.UUID
+
+    @staticmethod
+    def new() -> WorkflowId:
+        return WorkflowId(uuid.uuid4())
+
+    @staticmethod
+    def parse(raw: str) -> WorkflowId:
+        return WorkflowId(uuid.UUID(raw))
+
+    def __str__(self) -> str:
+        return str(self.value)
+
+
+@dataclass(frozen=True, slots=True)
+class WorkflowVersionId:
+    value: uuid.UUID
+
+    @staticmethod
+    def new() -> WorkflowVersionId:
+        return WorkflowVersionId(uuid.uuid4())
+
+    def __str__(self) -> str:
+        return str(self.value)

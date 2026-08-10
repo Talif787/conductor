@@ -21,6 +21,8 @@ from app.presentation.api.middleware import ObservabilityMiddleware
 from app.presentation.api.v1.auth import router as auth_router
 from app.presentation.api.v1.health import router as health_router
 from app.presentation.api.v1.runs import router as runs_router
+from app.presentation.api.v1.tools import router as tools_router
+from app.presentation.api.v1.workflows import router as workflows_router
 
 
 def create_app(settings: AppSettings | None = None) -> FastAPI:
@@ -68,6 +70,8 @@ def create_app(settings: AppSettings | None = None) -> FastAPI:
     app.include_router(health_router)
     app.include_router(auth_router, prefix=settings.api_prefix)
     app.include_router(runs_router, prefix=settings.api_prefix)
+    app.include_router(tools_router, prefix=settings.api_prefix)
+    app.include_router(workflows_router, prefix=settings.api_prefix)
     app.mount("/metrics", make_asgi_app())
     return app
 
