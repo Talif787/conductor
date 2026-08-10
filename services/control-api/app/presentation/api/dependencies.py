@@ -18,6 +18,19 @@ from app.application.auth.principal import Principal
 from app.application.ports import EventPublisher, UnitOfWork
 from app.application.run.command_handlers import CancelRunHandler, CreateRunHandler
 from app.application.run.query_handlers import GetRunHandler, ListRunsHandler
+from app.application.tools.command_handlers import RegisterToolHandler, UpdateToolHandler
+from app.application.tools.query_handlers import GetToolHandler, ListToolsHandler
+from app.application.workflows.command_handlers import (
+    ArchiveWorkflowHandler,
+    CreateDraftHandler,
+    CreateWorkflowHandler,
+    PublishVersionHandler,
+    UpdateDraftHandler,
+)
+from app.application.workflows.query_handlers import (
+    GetWorkflowHandler,
+    ListWorkflowsHandler,
+)
 from app.config.settings import AppSettings, get_settings
 from app.domain.identity.errors import AuthenticationError, PermissionDeniedError
 from app.domain.identity.roles import Permission
@@ -147,3 +160,71 @@ def get_page_params(
 
 
 PageParams = Annotated[tuple[int, str | None], Depends(get_page_params)]
+
+
+# --- tool handlers ---
+def provide_register_tool_handler(
+    uow_factory: Annotated[UnitOfWorkFactory, Depends(provide_uow_factory)],
+) -> RegisterToolHandler:
+    return RegisterToolHandler(uow_factory)
+
+
+def provide_update_tool_handler(
+    uow_factory: Annotated[UnitOfWorkFactory, Depends(provide_uow_factory)],
+) -> UpdateToolHandler:
+    return UpdateToolHandler(uow_factory)
+
+
+def provide_get_tool_handler(
+    uow_factory: Annotated[UnitOfWorkFactory, Depends(provide_uow_factory)],
+) -> GetToolHandler:
+    return GetToolHandler(uow_factory)
+
+
+def provide_list_tools_handler(
+    uow_factory: Annotated[UnitOfWorkFactory, Depends(provide_uow_factory)],
+) -> ListToolsHandler:
+    return ListToolsHandler(uow_factory)
+
+
+# --- workflow handlers ---
+def provide_create_workflow_handler(
+    uow_factory: Annotated[UnitOfWorkFactory, Depends(provide_uow_factory)],
+) -> CreateWorkflowHandler:
+    return CreateWorkflowHandler(uow_factory)
+
+
+def provide_update_draft_handler(
+    uow_factory: Annotated[UnitOfWorkFactory, Depends(provide_uow_factory)],
+) -> UpdateDraftHandler:
+    return UpdateDraftHandler(uow_factory)
+
+
+def provide_publish_version_handler(
+    uow_factory: Annotated[UnitOfWorkFactory, Depends(provide_uow_factory)],
+) -> PublishVersionHandler:
+    return PublishVersionHandler(uow_factory)
+
+
+def provide_create_draft_handler(
+    uow_factory: Annotated[UnitOfWorkFactory, Depends(provide_uow_factory)],
+) -> CreateDraftHandler:
+    return CreateDraftHandler(uow_factory)
+
+
+def provide_archive_workflow_handler(
+    uow_factory: Annotated[UnitOfWorkFactory, Depends(provide_uow_factory)],
+) -> ArchiveWorkflowHandler:
+    return ArchiveWorkflowHandler(uow_factory)
+
+
+def provide_get_workflow_handler(
+    uow_factory: Annotated[UnitOfWorkFactory, Depends(provide_uow_factory)],
+) -> GetWorkflowHandler:
+    return GetWorkflowHandler(uow_factory)
+
+
+def provide_list_workflows_handler(
+    uow_factory: Annotated[UnitOfWorkFactory, Depends(provide_uow_factory)],
+) -> ListWorkflowsHandler:
+    return ListWorkflowsHandler(uow_factory)

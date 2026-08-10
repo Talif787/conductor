@@ -17,6 +17,16 @@ from app.domain.identity.errors import (
     TokenReuseError,
 )
 from app.domain.run.errors import DomainError, InvalidStateTransitionError, RunNotFoundError
+from app.domain.tools.errors import ToolError, ToolNameConflictError, ToolNotFoundError
+from app.domain.workflows.errors import (
+    InvalidWorkflowStateError,
+    WorkflowError,
+    WorkflowNameConflictError,
+    WorkflowNotFoundError,
+    WorkflowNotPublishedError,
+    WorkflowValidationError,
+    WorkflowVersionNotFoundError,
+)
 
 logger = structlog.get_logger(__name__)
 
@@ -91,6 +101,50 @@ def register_exception_handlers(app: FastAPI) -> None:
     @app.exception_handler(IdentityError)
     async def _handle_identity(request: Request, exc: IdentityError) -> JSONResponse:
         return _problem(400, "Identity error", str(exc), request, "identity-error")
+
+    @app.exception_handler(ToolNotFoundError)
+    async def _handle_tool_missing(request: Request, exc: ToolNotFoundError) -> JSONResponse:
+        return _problem(404, "Tool not found", str(exc), request, "tool-not-found")
+
+    @app.exception_handler(ToolNameConflictError)
+    async def _handle_tool_conflict(request: Request, exc: ToolNameConflictError) -> JSONResponse:
+        return _problem(409, "Tool name conflict", str(exc), request, "tool-name-conflict")
+
+    @app.exception_handler(ToolError)
+    async def _handle_tool_error(request: Request, exc: ToolError) -> JSONResponse:
+        return _problem(400, "Tool error", str(exc), request, "tool-error")
+
+    @app.exception_handler(WorkflowNotFoundError)
+    async def _handle_wf_missing(request: Request, exc: WorkflowNotFoundError) -> JSONResponse:
+        return _problem(404, "Workflow not found", str(exc), request, "workflow-not-found")
+
+    @app.exception_handler(WorkflowVersionNotFoundError)
+    async def _handle_wf_version_missing(
+        request: Request, exc: WorkflowVersionNotFoundError
+    ) -> JSONResponse:
+        return _problem(404, "Workflow version not found", str(exc), request, "version-not-found")
+
+    @app.exception_handler(WorkflowNameConflictError)
+    async def _handle_wf_conflict(request: Request, exc: WorkflowNameConflictError) -> JSONResponse:
+        return _problem(409, "Workflow name conflict", str(exc), request, "workflow-name-conflict")
+
+    @app.exception_handler(WorkflowNotPublishedError)
+    async def _handle_wf_unpublished(
+        request: Request, exc: WorkflowNotPublishedError
+    ) -> JSONResponse:
+        return _problem(409, "Workflow not published", str(exc), request, "workflow-not-published")
+
+    @app.exception_handler(InvalidWorkflowStateError)
+    async def _handle_wf_state(request: Request, exc: InvalidWorkflowStateError) -> JSONResponse:
+        return _problem(409, "Invalid workflow state", str(exc), request, "invalid-workflow-state")
+
+    @app.exception_handler(WorkflowValidationError)
+    async def _handle_wf_validation(request: Request, exc: WorkflowValidationError) -> JSONResponse:
+        return _problem(422, "Workflow validation failed", str(exc), request, "workflow-invalid")
+
+    @app.exception_handler(WorkflowError)
+    async def _handle_wf_error(request: Request, exc: WorkflowError) -> JSONResponse:
+        return _problem(400, "Workflow error", str(exc), request, "workflow-error")
 
     @app.exception_handler(ValueError)
     async def _handle_value_error(request: Request, exc: ValueError) -> JSONResponse:

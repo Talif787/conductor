@@ -105,3 +105,106 @@ class PrincipalResponse(BaseModel):
     tenant_id: str
     roles: list[str]
     permissions: list[str]
+
+
+class RegisterToolRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    name: str = Field(min_length=1, max_length=200)
+    kind: str = Field(pattern="^(builtin|http|mcp)$")
+    input_schema: dict[str, Any] = Field(default_factory=dict)
+    output_schema: dict[str, Any] = Field(default_factory=dict)
+    description: str = Field(default="", max_length=2000)
+
+
+class UpdateToolRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    description: str | None = Field(default=None, max_length=2000)
+    input_schema: dict[str, Any] | None = None
+    output_schema: dict[str, Any] | None = None
+
+
+class ToolResponse(BaseModel):
+    id: str
+    name: str
+    description: str
+    kind: str
+    input_schema: dict[str, Any]
+    output_schema: dict[str, Any]
+    created_at: str
+    updated_at: str
+
+    @classmethod
+    def from_dto(cls, dto: Any) -> ToolResponse:
+        return cls(**asdict(dto))
+
+
+class StepSchema(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    step_id: str = Field(min_length=1, max_length=128)
+    name: str = Field(default="", max_length=200)
+    tool_id: str = Field(min_length=1)
+    depends_on: list[str] = Field(default_factory=list)
+
+
+class WorkflowDefinitionSchema(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    steps: list[StepSchema] = Field(default_factory=list)
+
+
+class CreateWorkflowRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    name: str = Field(min_length=1, max_length=200)
+    description: str = Field(default="", max_length=2000)
+
+
+class UpdateDraftRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    definition: WorkflowDefinitionSchema
+
+
+class WorkflowVersionResponse(BaseModel):
+    id: str
+    workflow_id: str
+    version: int
+    status: str
+    definition: dict[str, Any]
+    created_at: str
+    published_at: str | None
+
+    @classmethod
+    def from_dto(cls, dto: Any) -> WorkflowVersionResponse:
+        return cls(**asdict(dto))
+
+
+class WorkflowVersionSummary(BaseModel):
+    version: int
+    status: str
+    published_at: str | None
+
+
+class WorkflowResponse(BaseModel):
+    id: str
+    name: str
+    description: str
+    status: str
+    created_at: str
+    updated_at: str
+    versions: list[WorkflowVersionSummary]
+
+    @classmethod
+    def from_dto(cls, dto: Any) -> WorkflowResponse:
+        return cls(
+            id=dto.id,
+            name=dto.name,
+            description=dto.description,
+            status=dto.status,
+            created_at=dto.created_at,
+            updated_at=dto.updated_at,
+            versions=[WorkflowVersionSummary(**asdict(v)) for v in dto.versions],
+        )

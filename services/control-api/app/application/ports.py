@@ -14,6 +14,11 @@ from app.domain.identity.repository import (
 )
 from app.domain.run.events import DomainEvent
 from app.domain.run.repository import RunRepository
+from app.domain.tools.repository import ToolRepository
+from app.domain.workflows.repository import (
+    WorkflowRepository,
+    WorkflowVersionRepository,
+)
 
 
 class UnitOfWork(abc.ABC):
@@ -24,6 +29,9 @@ class UnitOfWork(abc.ABC):
     users: UserRepository
     memberships: MembershipRepository
     refresh_tokens: RefreshTokenRepository
+    tools: ToolRepository
+    workflows: WorkflowRepository
+    workflow_versions: WorkflowVersionRepository
 
     async def __aenter__(self) -> UnitOfWork:
         return self

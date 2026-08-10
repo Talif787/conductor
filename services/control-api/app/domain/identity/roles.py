@@ -20,19 +20,35 @@ class Permission(StrEnum):
     RUNS_CANCEL = "runs:cancel"
     MEMBERS_READ = "members:read"
     MEMBERS_WRITE = "members:write"
+    TOOLS_READ = "tools:read"
+    TOOLS_WRITE = "tools:write"
+    WORKFLOWS_READ = "workflows:read"
+    WORKFLOWS_WRITE = "workflows:write"
+    WORKFLOWS_PUBLISH = "workflows:publish"
 
 
 _ALL: frozenset[Permission] = frozenset(Permission)
-_OPERATOR: frozenset[Permission] = frozenset(
-    {Permission.RUNS_READ, Permission.RUNS_CREATE, Permission.RUNS_CANCEL}
+_READ: frozenset[Permission] = frozenset(
+    {Permission.RUNS_READ, Permission.TOOLS_READ, Permission.WORKFLOWS_READ}
+)
+_OPERATOR: frozenset[Permission] = _READ | frozenset(
+    {Permission.RUNS_CREATE, Permission.RUNS_CANCEL}
+)
+_AUTHOR: frozenset[Permission] = _OPERATOR | frozenset(
+    {
+        Permission.MEMBERS_READ,
+        Permission.TOOLS_WRITE,
+        Permission.WORKFLOWS_WRITE,
+        Permission.WORKFLOWS_PUBLISH,
+    }
 )
 
 ROLE_PERMISSIONS: dict[Role, frozenset[Permission]] = {
     Role.OWNER: _ALL,
     Role.ADMIN: _ALL,
-    Role.AUTHOR: _OPERATOR | frozenset({Permission.MEMBERS_READ}),
+    Role.AUTHOR: _AUTHOR,
     Role.OPERATOR: _OPERATOR,
-    Role.VIEWER: frozenset({Permission.RUNS_READ}),
+    Role.VIEWER: _READ,
 }
 
 

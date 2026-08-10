@@ -20,7 +20,14 @@ from app.domain.run.entities import Run
 from app.domain.run.events import DomainEvent
 from app.domain.run.repository import Page, PagedRuns, RunFilter, RunRepository
 from app.domain.run.value_objects import RunId
-from app.domain.shared.identifiers import TenantId, UserId
+from app.domain.shared.identifiers import TenantId, ToolId, UserId, WorkflowId
+from app.domain.tools.entities import Tool
+from app.domain.tools.repository import ToolRepository
+from app.domain.workflows.entities import Workflow, WorkflowVersion
+from app.domain.workflows.repository import (
+    WorkflowRepository,
+    WorkflowVersionRepository,
+)
 
 
 @dataclass
@@ -30,6 +37,9 @@ class InMemoryDatabase:
     users: dict[uuid.UUID, User] = field(default_factory=dict)
     memberships: dict[uuid.UUID, Membership] = field(default_factory=dict)
     refresh_tokens: dict[uuid.UUID, RefreshToken] = field(default_factory=dict)
+    tools: dict[uuid.UUID, Tool] = field(default_factory=dict)
+    workflows: dict[uuid.UUID, Workflow] = field(default_factory=dict)
+    workflow_versions: dict[uuid.UUID, WorkflowVersion] = field(default_factory=dict)
 
 
 class InMemoryRunRepository(RunRepository):
@@ -141,6 +151,9 @@ class InMemoryUnitOfWork(UnitOfWork):
         self.users = InMemoryUserRepository(self._db.users)
         self.memberships = InMemoryMembershipRepository(self._db.memberships)
         self.refresh_tokens = InMemoryRefreshTokenRepository(self._db.refresh_tokens)
+        self.tools = InMemoryToolRepository(self._db.tools)
+        self.workflows = InMemoryWorkflowRepository(self._db.workflows)
+        self.workflow_versions = InMemoryWorkflowVersionRepository(self._db.workflow_versions)
         return self
 
     async def __aexit__(
@@ -159,3 +172,88 @@ class InMemoryUnitOfWork(UnitOfWork):
 
     async def rollback(self) -> None:
         return None
+
+
+class InMemoryToolRepository(ToolRepository):
+    def __init__(self, store: dict[uuid.UUID, Tool]) -> None:
+        self._store = store
+
+    async def add(self, tool: Tool) -> None:
+        self._store[tool.id.value] = tool
+
+    async def get(self, tenant_id: TenantId, tool_id: ToolId) -> Tool | None:
+        tool = self._store.get(tool_id.value)
+        if tool is not None and tool.tenant_id == tenant_id:
+            return tool
+        return None
+
+    async def find_by_name(self, tenant_id: TenantId, name: str) -> Tool | None:
+        for tool in self._store.values():
+            if tool.tenant_id == tenant_id and tool.name == name:
+                return tool
+        return None
+
+    async def list(self, tenant_id: TenantId) -> list[Tool]:
+        return [t for t in self._store.values() if t.tenant_id == tenant_id]
+
+
+class InMemoryWorkflowRepository(WorkflowRepository):
+    def __init__(self, store: dict[uuid.UUID, Workflow]) -> None:
+        self._store = store
+
+    async def add(self, workflow: Workflow) -> None:
+        self._store[workflow.id.value] = workflow
+
+    async def save(self, workflow: Workflow) -> None:
+        self._store[workflow.id.value] = workflow
+
+    async def get(self, tenant_id: TenantId, workflow_id: WorkflowId) -> Workflow | None:
+        workflow = self._store.get(workflow_id.value)
+        if workflow is not None and workflow.tenant_id == tenant_id:
+            return workflow
+        return None
+
+    async def find_by_name(self, tenant_id: TenantId, name: str) -> Workflow | None:
+        for workflow in self._store.values():
+            if workflow.tenant_id == tenant_id and workflow.name == name:
+                return workflow
+        return None
+
+    async def list(self, tenant_id: TenantId) -> list[Workflow]:
+        return [w for w in self._store.values() if w.tenant_id == tenant_id]
+
+
+class InMemoryWorkflowVersionRepository(WorkflowVersionRepository):
+    def __init__(self, store: dict[uuid.UUID, WorkflowVersion]) -> None:
+        self._store = store
+
+    async def add(self, version: WorkflowVersion) -> None:
+        self._store[version.id.value] = version
+
+    async def save(self, version: WorkflowVersion) -> None:
+        self._store[version.id.value] = version
+
+    async def get(
+        self, tenant_id: TenantId, workflow_id: WorkflowId, version: int
+    ) -> WorkflowVersion | None:
+        for candidate in self._store.values():
+            if (
+                candidate.tenant_id == tenant_id
+                and candidate.workflow_id == workflow_id
+                and candidate.version == version
+            ):
+                return candidate
+        return None
+
+    async def list_for_workflow(
+        self, tenant_id: TenantId, workflow_id: WorkflowId
+    ) -> list[WorkflowVersion]:
+        return [
+            v
+            for v in self._store.values()
+            if v.tenant_id == tenant_id and v.workflow_id == workflow_id
+        ]
+
+    async def latest(self, tenant_id: TenantId, workflow_id: WorkflowId) -> WorkflowVersion | None:
+        versions = await self.list_for_workflow(tenant_id, workflow_id)
+        return max(versions, key=lambda v: v.version) if versions else None
