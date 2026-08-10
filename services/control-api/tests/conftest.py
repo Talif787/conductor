@@ -1,4 +1,5 @@
 """Shared pytest fixtures. API and unit tests run fully in-memory (no database)."""
+
 from __future__ import annotations
 
 import uuid

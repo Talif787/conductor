@@ -1,4 +1,5 @@
 """FastAPI dependency providers (the composition root wiring)."""
+
 from __future__ import annotations
 
 from collections.abc import Callable
@@ -75,7 +76,7 @@ def get_current_tenant(
 
 def get_page_params(
     settings: Annotated[AppSettings, Depends(provide_settings)],
-    limit: Annotated[int, Query(ge=1)] = 0,
+    limit: Annotated[int | None, Query(ge=1)] = None,
     cursor: Annotated[str | None, Query()] = None,
 ) -> tuple[int, str | None]:
     effective = limit or settings.default_page_size

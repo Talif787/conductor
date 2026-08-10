@@ -1,4 +1,5 @@
 """Repository port for the Run aggregate (implemented in infrastructure)."""
+
 from __future__ import annotations
 
 import abc

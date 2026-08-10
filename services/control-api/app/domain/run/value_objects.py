@@ -1,14 +1,15 @@
 """Immutable value objects for the Run bounded context."""
+
 from __future__ import annotations
 
 import uuid
 from dataclasses import dataclass
-from enum import Enum
+from enum import StrEnum
 
 MAX_GOAL_LENGTH = 8000
 
 
-class RunStatus(str, Enum):
+class RunStatus(StrEnum):
     QUEUED = "queued"
     PLANNING = "planning"
     RUNNING = "running"
@@ -22,7 +23,7 @@ class RunStatus(str, Enum):
         return self in {RunStatus.COMPLETED, RunStatus.FAILED, RunStatus.CANCELLED}
 
 
-class Priority(str, Enum):
+class Priority(StrEnum):
     LOW = "low"
     NORMAL = "normal"
     HIGH = "high"
@@ -33,7 +34,7 @@ class TenantId:
     value: uuid.UUID
 
     @staticmethod
-    def parse(raw: str) -> "TenantId":
+    def parse(raw: str) -> TenantId:
         return TenantId(uuid.UUID(raw))
 
     def __str__(self) -> str:
@@ -45,11 +46,11 @@ class RunId:
     value: uuid.UUID
 
     @staticmethod
-    def new() -> "RunId":
+    def new() -> RunId:
         return RunId(uuid.uuid4())
 
     @staticmethod
-    def parse(raw: str) -> "RunId":
+    def parse(raw: str) -> RunId:
         return RunId(uuid.UUID(raw))
 
     def __str__(self) -> str:

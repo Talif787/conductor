@@ -1,4 +1,5 @@
 """In-memory adapters used by unit and API tests (no database required)."""
+
 from __future__ import annotations
 
 import uuid
@@ -53,7 +54,7 @@ class InMemoryUnitOfWork(UnitOfWork):
         self._store = store
         self.committed = False
 
-    async def __aenter__(self) -> "InMemoryUnitOfWork":
+    async def __aenter__(self) -> InMemoryUnitOfWork:
         self.runs = InMemoryRunRepository(self._store)
         return self
 

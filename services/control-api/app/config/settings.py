@@ -1,4 +1,5 @@
 """Twelve-factor configuration loaded from the environment."""
+
 from __future__ import annotations
 
 from functools import lru_cache

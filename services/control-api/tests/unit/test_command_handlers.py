@@ -6,7 +6,7 @@ import pytest
 
 from app.application.run.command_handlers import CancelRunHandler, CreateRunHandler
 from app.application.run.commands import CancelRun, CreateRun
-from app.domain.run.errors import RunNotFound
+from app.domain.run.errors import RunNotFoundError
 from app.infrastructure.persistence.in_memory import InMemoryUnitOfWork
 
 
@@ -74,7 +74,5 @@ async def test_cancel_run(uow_factory) -> None:
 async def test_cancel_missing_run_raises(uow_factory) -> None:
     publisher = _CapturingPublisher()
     handler = CancelRunHandler(uow_factory, publisher)
-    with pytest.raises(RunNotFound):
-        await handler.handle(
-            CancelRun(tenant_id=str(uuid.uuid4()), run_id=str(uuid.uuid4()))
-        )
+    with pytest.raises(RunNotFoundError):
+        await handler.handle(CancelRun(tenant_id=str(uuid.uuid4()), run_id=str(uuid.uuid4())))

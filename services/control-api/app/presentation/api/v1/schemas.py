@@ -1,6 +1,8 @@
 """Pydantic request and response models for the v1 HTTP API."""
+
 from __future__ import annotations
 
+from dataclasses import asdict
 from datetime import datetime
 from typing import Any
 
@@ -33,8 +35,8 @@ class RunResponse(BaseModel):
     updated_at: datetime
 
     @classmethod
-    def from_dto(cls, dto: RunDTO) -> "RunResponse":
-        return cls(**dto.__dict__)
+    def from_dto(cls, dto: RunDTO) -> RunResponse:
+        return cls(**asdict(dto))
 
 
 class RunSummaryResponse(BaseModel):
@@ -46,8 +48,8 @@ class RunSummaryResponse(BaseModel):
     updated_at: datetime
 
     @classmethod
-    def from_dto(cls, dto: RunSummaryDTO) -> "RunSummaryResponse":
-        return cls(**dto.__dict__)
+    def from_dto(cls, dto: RunSummaryDTO) -> RunSummaryResponse:
+        return cls(**asdict(dto))
 
 
 class PagedRunsResponse(BaseModel):
@@ -55,7 +57,7 @@ class PagedRunsResponse(BaseModel):
     next_cursor: str | None
 
     @classmethod
-    def from_dto(cls, dto: PagedRunsDTO) -> "PagedRunsResponse":
+    def from_dto(cls, dto: PagedRunsDTO) -> PagedRunsResponse:
         return cls(
             items=[RunSummaryResponse.from_dto(item) for item in dto.items],
             next_cursor=dto.next_cursor,

@@ -1,4 +1,5 @@
 """SQLAlchemy-backed unit of work."""
+
 from __future__ import annotations
 
 from types import TracebackType
@@ -14,7 +15,7 @@ class SqlAlchemyUnitOfWork(UnitOfWork):
         self._session_factory = session_factory
         self._session: AsyncSession | None = None
 
-    async def __aenter__(self) -> "SqlAlchemyUnitOfWork":
+    async def __aenter__(self) -> SqlAlchemyUnitOfWork:
         self._session = self._session_factory()
         self.runs = SqlAlchemyRunRepository(self._session)
         return self

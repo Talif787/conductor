@@ -1,7 +1,9 @@
 """PostgreSQL-backed implementation of the RunRepository port."""
+
 from __future__ import annotations
 
 import base64
+import uuid
 from collections.abc import Sequence
 from datetime import datetime
 
@@ -23,10 +25,10 @@ def _encode_cursor(created_at: datetime, run_id: str) -> str:
     return base64.urlsafe_b64encode(raw.encode()).decode()
 
 
-def _decode_cursor(cursor: str) -> tuple[datetime, str]:
+def _decode_cursor(cursor: str) -> tuple[datetime, uuid.UUID]:
     raw = base64.urlsafe_b64decode(cursor.encode()).decode()
     created_at_str, run_id = raw.split(_CURSOR_SEPARATOR, 1)
-    return datetime.fromisoformat(created_at_str), run_id
+    return datetime.fromisoformat(created_at_str), uuid.UUID(run_id)
 
 
 class SqlAlchemyRunRepository(RunRepository):
@@ -35,6 +37,11 @@ class SqlAlchemyRunRepository(RunRepository):
 
     async def add(self, run: Run, events: Sequence[DomainEvent]) -> None:
         self._session.add(run_to_model(run))
+        # Flush so the parent runs row is inserted before its run_events children.
+        # These models share a table-level foreign key but no ORM relationship, so the
+        # unit of work will not order the two inserts on its own. This stays inside the
+        # transaction: the commit still happens later in the unit of work.
+        await self._session.flush()
         for event in events:
             self._session.add(event_to_model(event))
 
@@ -73,8 +80,7 @@ class SqlAlchemyRunRepository(RunRepository):
         if page.cursor is not None:
             cursor_created_at, cursor_run_id = _decode_cursor(page.cursor)
             stmt = stmt.where(
-                tuple_(RunModel.created_at, RunModel.id)
-                < tuple_(cursor_created_at, cursor_run_id)
+                tuple_(RunModel.created_at, RunModel.id) < (cursor_created_at, cursor_run_id)
             )
         stmt = stmt.order_by(RunModel.created_at.desc(), RunModel.id.desc()).limit(page.limit + 1)
 

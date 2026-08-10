@@ -1,4 +1,5 @@
 """Mapping between ORM rows and the Run aggregate / domain events."""
+
 from __future__ import annotations
 
 import dataclasses

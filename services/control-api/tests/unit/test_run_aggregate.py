@@ -5,7 +5,7 @@ import uuid
 import pytest
 
 from app.domain.run.entities import Run
-from app.domain.run.errors import InvalidStateTransition
+from app.domain.run.errors import InvalidStateTransitionError
 from app.domain.run.events import RunCancelled, RunCreated
 from app.domain.run.value_objects import Goal, Priority, RunStatus, TenantId
 
@@ -39,7 +39,7 @@ def test_valid_lifecycle_transitions() -> None:
 
 def test_invalid_transition_raises() -> None:
     run = _new_run()
-    with pytest.raises(InvalidStateTransition):
+    with pytest.raises(InvalidStateTransitionError):
         run.complete()
 
 
@@ -65,7 +65,5 @@ def test_empty_goal_rejected() -> None:
 
 
 def test_priority_values() -> None:
-    run = Run.create(
-        tenant_id=TenantId(uuid.uuid4()), goal=Goal("x"), priority=Priority.HIGH
-    )
+    run = Run.create(tenant_id=TenantId(uuid.uuid4()), goal=Goal("x"), priority=Priority.HIGH)
     assert run.priority is Priority.HIGH

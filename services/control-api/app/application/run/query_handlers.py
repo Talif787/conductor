@@ -1,4 +1,5 @@
 """Query handlers implementing the read side of the Run context."""
+
 from __future__ import annotations
 
 from collections.abc import Callable
@@ -7,7 +8,7 @@ from app.application.ports import UnitOfWork
 from app.application.run.dtos import PagedRunsDTO, RunDTO
 from app.application.run.mappers import to_run_dto, to_run_summary_dto
 from app.application.run.queries import GetRun, ListRuns
-from app.domain.run.errors import RunNotFound
+from app.domain.run.errors import RunNotFoundError
 from app.domain.run.repository import Page, RunFilter
 from app.domain.run.value_objects import RunId, RunStatus, TenantId
 
@@ -24,7 +25,7 @@ class GetRunHandler:
         async with self._uow_factory() as uow:
             run = await uow.runs.get(tenant_id, run_id)
         if run is None:
-            raise RunNotFound(str(run_id))
+            raise RunNotFoundError(str(run_id))
         return to_run_dto(run)
 
 

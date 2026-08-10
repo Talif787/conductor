@@ -50,9 +50,7 @@ def test_list_and_cancel(client, tenant_id) -> None:
     assert listing.status_code == 200
     assert any(item["id"] == created["id"] for item in listing.json()["items"])
 
-    cancelled = client.post(
-        f"/api/v1/runs/{created['id']}/cancel", headers=_headers(tenant_id)
-    )
+    cancelled = client.post(f"/api/v1/runs/{created['id']}/cancel", headers=_headers(tenant_id))
     assert cancelled.status_code == 200
     assert cancelled.json()["status"] == "cancelled"
 

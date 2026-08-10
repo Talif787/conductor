@@ -1,4 +1,5 @@
 """Application-level ports: unit of work and event publishing."""
+
 from __future__ import annotations
 
 import abc
@@ -14,7 +15,7 @@ class UnitOfWork(abc.ABC):
 
     runs: RunRepository
 
-    async def __aenter__(self) -> "UnitOfWork":
+    async def __aenter__(self) -> UnitOfWork:
         return self
 
     @abc.abstractmethod

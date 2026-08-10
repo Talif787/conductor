@@ -1,4 +1,5 @@
 """Mapping between the Run aggregate and application DTOs."""
+
 from __future__ import annotations
 
 from app.application.run.dtos import RunDTO, RunSummaryDTO

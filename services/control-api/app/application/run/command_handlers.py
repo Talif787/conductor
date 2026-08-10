@@ -1,4 +1,5 @@
 """Command handlers implementing the write side of the Run context."""
+
 from __future__ import annotations
 
 from collections.abc import Callable
@@ -10,7 +11,7 @@ from app.application.run.commands import CancelRun, CreateRun
 from app.application.run.dtos import RunDTO
 from app.application.run.mappers import to_run_dto
 from app.domain.run.entities import Run
-from app.domain.run.errors import RunNotFound
+from app.domain.run.errors import RunNotFoundError
 from app.domain.run.value_objects import Goal, Priority, RunId, TenantId
 
 logger = structlog.get_logger(__name__)
@@ -71,7 +72,7 @@ class CancelRunHandler:
         async with self._uow_factory() as uow:
             run = await uow.runs.get(tenant_id, run_id)
             if run is None:
-                raise RunNotFound(str(run_id))
+                raise RunNotFoundError(str(run_id))
             run.cancel()
             events = run.pull_events()
             await uow.runs.save(run, events)
