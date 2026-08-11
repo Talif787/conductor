@@ -5,12 +5,13 @@ from __future__ import annotations
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, Header, Query, Response, status
+from fastapi.responses import JSONResponse
 
 from app.application.auth.principal import Principal
-from app.application.execution.command_handlers import ExecuteRunHandler
-from app.application.execution.commands import ExecuteRun
 from app.application.execution.queries import GetRunExecution
 from app.application.execution.query_handlers import GetRunExecutionHandler
+from app.application.governance.command_handlers import SubmitRunHandler
+from app.application.governance.commands import SubmitRun
 from app.application.run.command_handlers import CancelRunHandler, CreateRunHandler
 from app.application.run.commands import CancelRun, CreateRun
 from app.application.run.queries import GetRun, ListRuns
@@ -20,13 +21,14 @@ from app.presentation.api.dependencies import (
     PageParams,
     provide_cancel_run_handler,
     provide_create_run_handler,
-    provide_execute_run_handler,
     provide_get_run_execution_handler,
     provide_get_run_handler,
     provide_list_runs_handler,
+    provide_submit_run_handler,
     require_permission,
 )
 from app.presentation.api.v1.schemas import (
+    ApprovalResponse,
     CreateRunRequest,
     PagedRunsResponse,
     RunExecutionResponse,
@@ -35,7 +37,7 @@ from app.presentation.api.v1.schemas import (
 
 router = APIRouter(prefix="/runs", tags=["runs"])
 
-_STATUS_PATTERN = "^(queued|planning|running|paused|completed|failed|cancelled)$"
+_STATUS_PATTERN = "^(queued|planning|running|paused|awaiting_approval|completed|failed|cancelled)$"
 
 
 @router.post("", response_model=RunResponse, status_code=status.HTTP_201_CREATED)
@@ -98,10 +100,22 @@ async def cancel_run(
 async def execute_run(
     run_id: str,
     principal: Annotated[Principal, Depends(require_permission(Permission.RUNS_EXECUTE))],
-    handler: Annotated[ExecuteRunHandler, Depends(provide_execute_run_handler)],
-) -> RunExecutionResponse:
-    dto = await handler.handle(ExecuteRun(tenant_id=str(principal.tenant_id), run_id=run_id))
-    return RunExecutionResponse.from_dto(dto)
+    handler: Annotated[SubmitRunHandler, Depends(provide_submit_run_handler)],
+) -> RunExecutionResponse | JSONResponse:
+    result = await handler.handle(
+        SubmitRun(
+            tenant_id=str(principal.tenant_id),
+            run_id=run_id,
+            principal_id=str(principal.user_id),
+            roles=tuple(role.value for role in principal.roles),
+        )
+    )
+    if result.outcome == "pending_approval" and result.approval is not None:
+        return JSONResponse(
+            status_code=status.HTTP_202_ACCEPTED,
+            content=ApprovalResponse.from_dto(result.approval).model_dump(),
+        )
+    return RunExecutionResponse.from_dto(result.execution)
 
 
 @router.get("/{run_id}/execution", response_model=RunExecutionResponse)

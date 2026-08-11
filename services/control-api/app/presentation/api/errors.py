@@ -13,6 +13,12 @@ from app.domain.execution.errors import (
     RunNotExecutableError,
     ToolKindNotSupportedError,
 )
+from app.domain.governance.errors import (
+    ApprovalNotFoundError,
+    GovernanceError,
+    InvalidApprovalStateError,
+    RunDeniedError,
+)
 from app.domain.identity.errors import (
     AuthenticationError,
     EmailAlreadyExistsError,
@@ -171,6 +177,26 @@ def register_exception_handlers(app: FastAPI) -> None:
     @app.exception_handler(ExecutionError)
     async def _handle_execution_error(request: Request, exc: ExecutionError) -> JSONResponse:
         return _problem(400, "Execution error", str(exc), request, "execution-error")
+
+    @app.exception_handler(RunDeniedError)
+    async def _handle_run_denied(request: Request, exc: RunDeniedError) -> JSONResponse:
+        return _problem(403, "Run denied by policy", str(exc), request, "run-denied")
+
+    @app.exception_handler(ApprovalNotFoundError)
+    async def _handle_approval_missing(
+        request: Request, exc: ApprovalNotFoundError
+    ) -> JSONResponse:
+        return _problem(404, "Approval not found", str(exc), request, "approval-not-found")
+
+    @app.exception_handler(InvalidApprovalStateError)
+    async def _handle_approval_state(
+        request: Request, exc: InvalidApprovalStateError
+    ) -> JSONResponse:
+        return _problem(409, "Invalid approval state", str(exc), request, "invalid-approval-state")
+
+    @app.exception_handler(GovernanceError)
+    async def _handle_governance(request: Request, exc: GovernanceError) -> JSONResponse:
+        return _problem(400, "Governance error", str(exc), request, "governance-error")
 
     @app.exception_handler(ValueError)
     async def _handle_value_error(request: Request, exc: ValueError) -> JSONResponse:

@@ -242,3 +242,24 @@ class RunExecutionResponse(BaseModel):
             finished_at=dto.finished_at,
             steps=[StepExecutionResponse(**asdict(s)) for s in dto.steps],
         )
+
+
+class ApprovalResponse(BaseModel):
+    id: str
+    run_id: str
+    reason: str
+    status: str
+    requested_at: str
+    decided_at: str | None
+    decided_by: str | None
+    decision_note: str | None
+
+    @classmethod
+    def from_dto(cls, dto: Any) -> ApprovalResponse:
+        return cls(**asdict(dto))
+
+
+class ApprovalDecisionRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    note: str | None = None

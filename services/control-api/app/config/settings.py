@@ -68,6 +68,19 @@ class ExecutionSettings(BaseSettings):
     max_concurrency: int = 8
 
 
+class PolicySettings(BaseSettings):
+    model_config = SettingsConfigDict(env_prefix="CONDUCTOR_POLICY_", extra="ignore")
+
+    engine: str = "local"  # "local" or "opa"
+    opa_url: str = "http://localhost:8181"
+    opa_decision_path: str = "v1/data/conductor/decision"
+    opa_timeout_seconds: float = 5.0
+    opa_fail_closed: bool = True
+    require_approval_for_high_priority: bool = False
+    require_approval_for_external_tools: bool = False
+    denied_tool_kinds: list[str] = Field(default_factory=list)
+
+
 class AppSettings(BaseSettings):
     model_config = SettingsConfigDict(env_prefix="CONDUCTOR_", extra="ignore")
 
@@ -84,6 +97,7 @@ class AppSettings(BaseSettings):
     llm: LLMSettings = Field(default_factory=LLMSettings)
     execution: ExecutionSettings = Field(default_factory=ExecutionSettings)
     temporal: TemporalSettings = Field(default_factory=TemporalSettings)
+    policy: PolicySettings = Field(default_factory=PolicySettings)
 
     @property
     def is_production(self) -> bool:

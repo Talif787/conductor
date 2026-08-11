@@ -10,6 +10,9 @@ from types import TracebackType
 from app.application.ports import UnitOfWork
 from app.domain.execution.entities import RunExecution
 from app.domain.execution.repository import RunExecutionRepository
+from app.domain.governance.entities import ApprovalRequest
+from app.domain.governance.repository import ApprovalRepository
+from app.domain.governance.value_objects import ApprovalStatus
 from app.domain.identity.entities import Membership, RefreshToken, Tenant, User
 from app.domain.identity.repository import (
     MembershipRepository,
@@ -22,7 +25,13 @@ from app.domain.run.entities import Run
 from app.domain.run.events import DomainEvent
 from app.domain.run.repository import Page, PagedRuns, RunFilter, RunRepository
 from app.domain.run.value_objects import RunId
-from app.domain.shared.identifiers import TenantId, ToolId, UserId, WorkflowId
+from app.domain.shared.identifiers import (
+    ApprovalId,
+    TenantId,
+    ToolId,
+    UserId,
+    WorkflowId,
+)
 from app.domain.tools.entities import Tool
 from app.domain.tools.repository import ToolRepository
 from app.domain.workflows.entities import Workflow, WorkflowVersion
@@ -43,6 +52,7 @@ class InMemoryDatabase:
     workflows: dict[uuid.UUID, Workflow] = field(default_factory=dict)
     workflow_versions: dict[uuid.UUID, WorkflowVersion] = field(default_factory=dict)
     run_executions: dict[uuid.UUID, RunExecution] = field(default_factory=dict)
+    approvals: dict[uuid.UUID, ApprovalRequest] = field(default_factory=dict)
 
 
 class InMemoryRunRepository(RunRepository):
@@ -158,6 +168,7 @@ class InMemoryUnitOfWork(UnitOfWork):
         self.workflows = InMemoryWorkflowRepository(self._db.workflows)
         self.workflow_versions = InMemoryWorkflowVersionRepository(self._db.workflow_versions)
         self.run_executions = InMemoryRunExecutionRepository(self._db.run_executions)
+        self.approvals = InMemoryApprovalRepository(self._db.approvals)
         return self
 
     async def __aexit__(
@@ -275,3 +286,38 @@ class InMemoryRunExecutionRepository(RunExecutionRepository):
         if execution is not None and execution.tenant_id == tenant_id:
             return execution
         return None
+
+
+class InMemoryApprovalRepository(ApprovalRepository):
+    def __init__(self, store: dict[uuid.UUID, ApprovalRequest]) -> None:
+        self._store = store
+
+    async def add(self, approval: ApprovalRequest) -> None:
+        self._store[approval.id.value] = approval
+
+    async def save(self, approval: ApprovalRequest) -> None:
+        self._store[approval.id.value] = approval
+
+    async def get(self, tenant_id: TenantId, approval_id: ApprovalId) -> ApprovalRequest | None:
+        approval = self._store.get(approval_id.value)
+        if approval is not None and approval.tenant_id == tenant_id:
+            return approval
+        return None
+
+    async def get_for_run(self, tenant_id: TenantId, run_id: RunId) -> ApprovalRequest | None:
+        matches = [
+            a for a in self._store.values() if a.tenant_id == tenant_id and a.run_id == run_id
+        ]
+        pending = [a for a in matches if a.is_pending]
+        if pending:
+            return pending[0]
+        return matches[0] if matches else None
+
+    async def list(
+        self, tenant_id: TenantId, status: ApprovalStatus | None = None
+    ) -> list[ApprovalRequest]:
+        items = [a for a in self._store.values() if a.tenant_id == tenant_id]
+        if status is not None:
+            items = [a for a in items if a.status == status]
+        items.sort(key=lambda a: a.requested_at, reverse=True)
+        return items

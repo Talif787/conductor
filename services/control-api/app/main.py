@@ -18,6 +18,7 @@ from app.infrastructure.security.password import Argon2PasswordHasher
 from app.infrastructure.security.tokens import JwtAccessTokenService
 from app.presentation.api.errors import register_exception_handlers
 from app.presentation.api.middleware import ObservabilityMiddleware
+from app.presentation.api.v1.approvals import router as approvals_router
 from app.presentation.api.v1.auth import router as auth_router
 from app.presentation.api.v1.health import router as health_router
 from app.presentation.api.v1.runs import router as runs_router
@@ -70,6 +71,7 @@ def create_app(settings: AppSettings | None = None) -> FastAPI:
     app.include_router(health_router)
     app.include_router(auth_router, prefix=settings.api_prefix)
     app.include_router(runs_router, prefix=settings.api_prefix)
+    app.include_router(approvals_router, prefix=settings.api_prefix)
     app.include_router(tools_router, prefix=settings.api_prefix)
     app.include_router(workflows_router, prefix=settings.api_prefix)
     app.mount("/metrics", make_asgi_app())

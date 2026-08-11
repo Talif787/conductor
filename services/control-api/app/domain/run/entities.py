@@ -8,6 +8,7 @@ from typing import Any
 from app.domain.run.errors import InvalidStateTransitionError
 from app.domain.run.events import (
     DomainEvent,
+    RunAwaitingApproval,
     RunCancelled,
     RunCompleted,
     RunCreated,
@@ -18,7 +19,13 @@ from app.domain.run.events import (
 from app.domain.run.value_objects import Goal, Priority, RunId, RunStatus, TenantId
 
 _ALLOWED_TRANSITIONS: dict[RunStatus, set[RunStatus]] = {
-    RunStatus.QUEUED: {RunStatus.PLANNING, RunStatus.CANCELLED, RunStatus.FAILED},
+    RunStatus.QUEUED: {
+        RunStatus.PLANNING,
+        RunStatus.AWAITING_APPROVAL,
+        RunStatus.CANCELLED,
+        RunStatus.FAILED,
+    },
+    RunStatus.AWAITING_APPROVAL: {RunStatus.PLANNING, RunStatus.CANCELLED, RunStatus.FAILED},
     RunStatus.PLANNING: {RunStatus.RUNNING, RunStatus.CANCELLED, RunStatus.FAILED},
     RunStatus.RUNNING: {
         RunStatus.PAUSED,
@@ -124,6 +131,12 @@ class Run:
             raise InvalidStateTransitionError(self.status.value, target.value)
         self.status = target
         self.updated_at = _utcnow()
+
+    def await_approval(self, reason: str) -> None:
+        self._transition(RunStatus.AWAITING_APPROVAL)
+        self._record(
+            RunAwaitingApproval(tenant_id=self.tenant_id.value, run_id=self.id.value, reason=reason)
+        )
 
     def start_planning(self) -> None:
         self._transition(RunStatus.PLANNING)

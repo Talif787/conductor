@@ -128,3 +128,19 @@ class StepExecutionId:
 
     def __str__(self) -> str:
         return str(self.value)
+
+
+@dataclass(frozen=True, slots=True)
+class ApprovalId:
+    value: uuid.UUID
+
+    @staticmethod
+    def new() -> ApprovalId:
+        return ApprovalId(uuid.uuid4())
+
+    @staticmethod
+    def parse(raw: str) -> ApprovalId:
+        return ApprovalId(uuid.UUID(raw))
+
+    def __str__(self) -> str:
+        return str(self.value)
