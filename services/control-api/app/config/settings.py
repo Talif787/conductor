@@ -50,6 +50,17 @@ class LLMSettings(BaseSettings):
     timeout_seconds: int = 30
 
 
+class TemporalSettings(BaseSettings):
+    model_config = SettingsConfigDict(env_prefix="CONDUCTOR_TEMPORAL_", extra="ignore")
+
+    host: str = "localhost:7233"
+    namespace: str = "default"
+    task_queue: str = "conductor-runs"
+    workflow_execution_timeout_seconds: int = 300
+    activity_start_to_close_timeout_seconds: int = 60
+    activity_max_attempts: int = 1
+
+
 class ExecutionSettings(BaseSettings):
     model_config = SettingsConfigDict(env_prefix="CONDUCTOR_EXEC_", extra="ignore")
 
@@ -72,6 +83,7 @@ class AppSettings(BaseSettings):
     auth: AuthSettings = Field(default_factory=AuthSettings)
     llm: LLMSettings = Field(default_factory=LLMSettings)
     execution: ExecutionSettings = Field(default_factory=ExecutionSettings)
+    temporal: TemporalSettings = Field(default_factory=TemporalSettings)
 
     @property
     def is_production(self) -> bool:
