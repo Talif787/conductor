@@ -34,6 +34,7 @@ class RegisterToolHandler:
                 input_schema=command.input_schema,
                 output_schema=command.output_schema,
                 description=command.description,
+                config=command.config,
             )
             await uow.tools.add(tool)
             await uow.commit()
@@ -56,6 +57,7 @@ class UpdateToolHandler:
                 description=command.description,
                 input_schema=command.input_schema,
                 output_schema=command.output_schema,
+                config=command.config,
             )
             await uow.commit()
         return to_tool_dto(tool)

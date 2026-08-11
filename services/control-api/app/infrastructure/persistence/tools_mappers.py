@@ -15,6 +15,7 @@ def tool_to_model(tool: Tool) -> ToolModel:
         kind=tool.kind.value,
         input_schema=tool.input_schema,
         output_schema=tool.output_schema,
+        config=tool.config,
         created_at=tool.created_at,
         updated_at=tool.updated_at,
     )
@@ -29,6 +30,7 @@ def model_to_tool(model: ToolModel) -> Tool:
         kind=ToolKind(model.kind),
         input_schema=model.input_schema,
         output_schema=model.output_schema,
+        config=model.config,
         created_at=model.created_at,
         updated_at=model.updated_at,
     )

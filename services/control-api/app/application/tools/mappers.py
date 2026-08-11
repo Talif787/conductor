@@ -12,6 +12,7 @@ def to_tool_dto(tool: Tool) -> ToolDTO:
         kind=tool.kind.value,
         input_schema=tool.input_schema,
         output_schema=tool.output_schema,
+        config=tool.config,
         created_at=tool.created_at.isoformat(),
         updated_at=tool.updated_at.isoformat(),
     )

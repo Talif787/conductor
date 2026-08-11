@@ -12,5 +12,6 @@ class ToolDTO:
     kind: str
     input_schema: dict[str, Any]
     output_schema: dict[str, Any]
+    config: dict[str, Any]
     created_at: str
     updated_at: str

@@ -23,6 +23,7 @@ class Tool:
     kind: ToolKind
     input_schema: dict[str, Any]
     output_schema: dict[str, Any]
+    config: dict[str, Any]
     created_at: datetime
     updated_at: datetime
 
@@ -36,6 +37,7 @@ class Tool:
         input_schema: dict[str, Any],
         output_schema: dict[str, Any],
         description: str = "",
+        config: dict[str, Any] | None = None,
     ) -> Tool:
         cleaned = name.strip()
         if not cleaned:
@@ -49,6 +51,7 @@ class Tool:
             kind=kind,
             input_schema=input_schema,
             output_schema=output_schema,
+            config=config or {},
             created_at=now,
             updated_at=now,
         )
@@ -59,6 +62,7 @@ class Tool:
         description: str | None = None,
         input_schema: dict[str, Any] | None = None,
         output_schema: dict[str, Any] | None = None,
+        config: dict[str, Any] | None = None,
     ) -> None:
         if description is not None:
             self.description = description
@@ -66,4 +70,6 @@ class Tool:
             self.input_schema = input_schema
         if output_schema is not None:
             self.output_schema = output_schema
+        if config is not None:
+            self.config = config
         self.updated_at = _utcnow()
