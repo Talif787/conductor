@@ -1,10 +1,13 @@
-.PHONY: install run test test-integration lint typecheck fmt migrate up down build
+.PHONY: install run worker test test-integration lint typecheck fmt migrate up down build
 
 install:
 	pip install -e ".[dev]"
 
 run:
 	uvicorn app.main:app --reload --port 8000
+
+worker:
+	python -m app.infrastructure.execution.temporal.worker
 
 test:
 	pytest -m "not integration"

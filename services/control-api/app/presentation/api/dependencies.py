@@ -270,12 +270,18 @@ def provide_execution_engine(
     http_client: Annotated[HttpToolClient, Depends(provide_http_tool_client)],
     mcp_client: Annotated[McpToolClient, Depends(provide_mcp_tool_client)],
 ) -> ExecutionEngine:
+    settings = get_settings()
+    if settings.execution.engine == "temporal":
+        # Imported lazily so the default local path never imports temporalio.
+        from app.infrastructure.execution.temporal.engine import TemporalExecutionEngine
+
+        return TemporalExecutionEngine(settings.temporal)
     invoker = CompositeToolInvoker(
         builtin=BuiltinToolInvoker(llm),
         http=HttpToolInvoker(http_client),
         mcp=McpToolInvoker(mcp_client),
     )
-    return LocalExecutionEngine(invoker, max_concurrency=get_settings().execution.max_concurrency)
+    return LocalExecutionEngine(invoker, max_concurrency=settings.execution.max_concurrency)
 
 
 def provide_execute_run_handler(

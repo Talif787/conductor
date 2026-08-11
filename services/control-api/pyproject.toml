@@ -24,6 +24,7 @@ dependencies = [
     "opentelemetry-instrumentation-fastapi>=0.46b0",
     "opentelemetry-instrumentation-sqlalchemy>=0.46b0",
     "opentelemetry-exporter-otlp-proto-grpc>=1.25",
+    "temporalio>=1.28",
 ]
 
 [project.optional-dependencies]
