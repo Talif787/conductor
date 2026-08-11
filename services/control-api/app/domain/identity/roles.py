@@ -19,6 +19,7 @@ class Permission(StrEnum):
     RUNS_CREATE = "runs:create"
     RUNS_CANCEL = "runs:cancel"
     RUNS_EXECUTE = "runs:execute"
+    RUNS_APPROVE = "runs:approve"
     MEMBERS_READ = "members:read"
     MEMBERS_WRITE = "members:write"
     TOOLS_READ = "tools:read"
@@ -37,6 +38,7 @@ _OPERATOR: frozenset[Permission] = _READ | frozenset(
 )
 _AUTHOR: frozenset[Permission] = _OPERATOR | frozenset(
     {
+        Permission.RUNS_APPROVE,
         Permission.MEMBERS_READ,
         Permission.TOOLS_WRITE,
         Permission.WORKFLOWS_WRITE,

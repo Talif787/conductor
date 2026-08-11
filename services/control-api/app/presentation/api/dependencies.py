@@ -19,6 +19,16 @@ from app.application.execution.command_handlers import ExecuteRunHandler
 from app.application.execution.ports import ExecutionEngine, LLMGateway
 from app.application.execution.query_handlers import GetRunExecutionHandler
 from app.application.execution.tool_clients import HttpToolClient, McpToolClient
+from app.application.governance.command_handlers import (
+    ApproveRequestHandler,
+    RejectRequestHandler,
+    SubmitRunHandler,
+)
+from app.application.governance.policy import PolicyDecisionPoint
+from app.application.governance.query_handlers import (
+    GetApprovalHandler,
+    ListApprovalsHandler,
+)
 from app.application.ports import EventPublisher, UnitOfWork
 from app.application.run.command_handlers import CancelRunHandler, CreateRunHandler
 from app.application.run.query_handlers import GetRunHandler, ListRunsHandler
@@ -45,6 +55,7 @@ from app.infrastructure.execution.tool_invoker import (
     BuiltinToolInvoker,
     CompositeToolInvoker,
 )
+from app.infrastructure.governance.local_policy import LocalPolicyEvaluator
 from app.infrastructure.http.http_client import HttpxToolClient
 from app.infrastructure.llm.gateway import FakeLLMGateway, HttpLLMGateway
 from app.infrastructure.mcp.mcp_client import JsonRpcMcpToolClient
@@ -296,3 +307,58 @@ def provide_get_run_execution_handler(
     uow_factory: Annotated[UnitOfWorkFactory, Depends(provide_uow_factory)],
 ) -> GetRunExecutionHandler:
     return GetRunExecutionHandler(uow_factory)
+
+
+# --- governance handlers ---
+def provide_policy_decision_point() -> PolicyDecisionPoint:
+    policy = get_settings().policy
+    if policy.engine == "opa":
+        # Imported lazily so the default local path never imports httpx for OPA.
+        from app.infrastructure.governance.opa_policy import OpaPolicyDecisionPoint
+
+        return OpaPolicyDecisionPoint(
+            base_url=policy.opa_url,
+            decision_path=policy.opa_decision_path,
+            timeout_seconds=policy.opa_timeout_seconds,
+            fail_closed=policy.opa_fail_closed,
+        )
+    return LocalPolicyEvaluator(
+        require_approval_for_high_priority=policy.require_approval_for_high_priority,
+        require_approval_for_external_tools=policy.require_approval_for_external_tools,
+        denied_tool_kinds=policy.denied_tool_kinds,
+    )
+
+
+def provide_submit_run_handler(
+    uow_factory: Annotated[UnitOfWorkFactory, Depends(provide_uow_factory)],
+    policy: Annotated[PolicyDecisionPoint, Depends(provide_policy_decision_point)],
+    executor: Annotated[ExecuteRunHandler, Depends(provide_execute_run_handler)],
+    publisher: Annotated[EventPublisher, Depends(provide_publisher)],
+) -> SubmitRunHandler:
+    return SubmitRunHandler(uow_factory, policy, executor, publisher)
+
+
+def provide_approve_request_handler(
+    uow_factory: Annotated[UnitOfWorkFactory, Depends(provide_uow_factory)],
+    executor: Annotated[ExecuteRunHandler, Depends(provide_execute_run_handler)],
+) -> ApproveRequestHandler:
+    return ApproveRequestHandler(uow_factory, executor)
+
+
+def provide_reject_request_handler(
+    uow_factory: Annotated[UnitOfWorkFactory, Depends(provide_uow_factory)],
+    publisher: Annotated[EventPublisher, Depends(provide_publisher)],
+) -> RejectRequestHandler:
+    return RejectRequestHandler(uow_factory, publisher)
+
+
+def provide_get_approval_handler(
+    uow_factory: Annotated[UnitOfWorkFactory, Depends(provide_uow_factory)],
+) -> GetApprovalHandler:
+    return GetApprovalHandler(uow_factory)
+
+
+def provide_list_approvals_handler(
+    uow_factory: Annotated[UnitOfWorkFactory, Depends(provide_uow_factory)],
+) -> ListApprovalsHandler:
+    return ListApprovalsHandler(uow_factory)

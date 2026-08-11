@@ -52,3 +52,8 @@ class RunFailed(DomainEvent):
 @dataclass(frozen=True, kw_only=True)
 class RunCancelled(DomainEvent):
     pass
+
+
+@dataclass(frozen=True, kw_only=True)
+class RunAwaitingApproval(DomainEvent):
+    reason: str

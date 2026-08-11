@@ -45,9 +45,9 @@ class ExecuteRunHandler:
             run = await uow.runs.get(tenant_id, run_id)
             if run is None:
                 raise RunNotFoundError(command.run_id)
-            if run.status is not RunStatus.QUEUED:
+            if run.status not in (RunStatus.QUEUED, RunStatus.AWAITING_APPROVAL):
                 raise RunNotExecutableError(
-                    f"run is '{run.status.value}'; only queued runs can be executed"
+                    f"run is '{run.status.value}'; only queued or approved runs can be executed"
                 )
             if run.workflow_id is None:
                 raise RunNotExecutableError("run has no workflow to execute")
