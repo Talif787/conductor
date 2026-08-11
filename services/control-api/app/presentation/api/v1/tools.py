@@ -42,6 +42,7 @@ async def register_tool(
             input_schema=body.input_schema,
             output_schema=body.output_schema,
             description=body.description,
+            config=body.config,
         )
     )
     return ToolResponse.from_dto(dto)
@@ -80,6 +81,7 @@ async def update_tool(
             description=body.description,
             input_schema=body.input_schema,
             output_schema=body.output_schema,
+            config=body.config,
         )
     )
     return ToolResponse.from_dto(dto)

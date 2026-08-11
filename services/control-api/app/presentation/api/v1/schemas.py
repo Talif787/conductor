@@ -115,6 +115,7 @@ class RegisterToolRequest(BaseModel):
     input_schema: dict[str, Any] = Field(default_factory=dict)
     output_schema: dict[str, Any] = Field(default_factory=dict)
     description: str = Field(default="", max_length=2000)
+    config: dict[str, Any] = Field(default_factory=dict)
 
 
 class UpdateToolRequest(BaseModel):
@@ -123,6 +124,7 @@ class UpdateToolRequest(BaseModel):
     description: str | None = Field(default=None, max_length=2000)
     input_schema: dict[str, Any] | None = None
     output_schema: dict[str, Any] | None = None
+    config: dict[str, Any] | None = None
 
 
 class ToolResponse(BaseModel):
@@ -132,6 +134,7 @@ class ToolResponse(BaseModel):
     kind: str
     input_schema: dict[str, Any]
     output_schema: dict[str, Any]
+    config: dict[str, Any]
     created_at: str
     updated_at: str
 

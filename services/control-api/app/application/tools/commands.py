@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Any
 
 
@@ -12,6 +12,7 @@ class RegisterTool:
     input_schema: dict[str, Any]
     output_schema: dict[str, Any]
     description: str = ""
+    config: dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass(frozen=True, slots=True)
@@ -21,3 +22,4 @@ class UpdateTool:
     description: str | None = None
     input_schema: dict[str, Any] | None = None
     output_schema: dict[str, Any] | None = None
+    config: dict[str, Any] | None = None

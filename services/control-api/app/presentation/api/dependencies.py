@@ -18,6 +18,7 @@ from app.application.auth.principal import Principal
 from app.application.execution.command_handlers import ExecuteRunHandler
 from app.application.execution.ports import ExecutionEngine, LLMGateway
 from app.application.execution.query_handlers import GetRunExecutionHandler
+from app.application.execution.tool_clients import HttpToolClient, McpToolClient
 from app.application.ports import EventPublisher, UnitOfWork
 from app.application.run.command_handlers import CancelRunHandler, CreateRunHandler
 from app.application.run.query_handlers import GetRunHandler, ListRunsHandler
@@ -37,12 +38,16 @@ from app.application.workflows.query_handlers import (
 from app.config.settings import AppSettings, get_settings
 from app.domain.identity.errors import AuthenticationError, PermissionDeniedError
 from app.domain.identity.roles import Permission
+from app.infrastructure.execution.http_invoker import HttpToolInvoker
 from app.infrastructure.execution.local_engine import LocalExecutionEngine
+from app.infrastructure.execution.mcp_invoker import McpToolInvoker
 from app.infrastructure.execution.tool_invoker import (
     BuiltinToolInvoker,
     CompositeToolInvoker,
 )
+from app.infrastructure.http.http_client import HttpxToolClient
 from app.infrastructure.llm.gateway import FakeLLMGateway, HttpLLMGateway
+from app.infrastructure.mcp.mcp_client import JsonRpcMcpToolClient
 from app.infrastructure.persistence.unit_of_work import SqlAlchemyUnitOfWork
 
 UnitOfWorkFactory = Callable[[], UnitOfWork]
@@ -252,10 +257,24 @@ def provide_llm_gateway() -> LLMGateway:
     return FakeLLMGateway()
 
 
+def provide_http_tool_client() -> HttpToolClient:
+    return HttpxToolClient()
+
+
+def provide_mcp_tool_client() -> McpToolClient:
+    return JsonRpcMcpToolClient()
+
+
 def provide_execution_engine(
     llm: Annotated[LLMGateway, Depends(provide_llm_gateway)],
+    http_client: Annotated[HttpToolClient, Depends(provide_http_tool_client)],
+    mcp_client: Annotated[McpToolClient, Depends(provide_mcp_tool_client)],
 ) -> ExecutionEngine:
-    invoker = CompositeToolInvoker(BuiltinToolInvoker(llm))
+    invoker = CompositeToolInvoker(
+        builtin=BuiltinToolInvoker(llm),
+        http=HttpToolInvoker(http_client),
+        mcp=McpToolInvoker(mcp_client),
+    )
     return LocalExecutionEngine(invoker, max_concurrency=get_settings().execution.max_concurrency)
 
 

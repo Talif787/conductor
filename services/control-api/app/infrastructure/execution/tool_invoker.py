@@ -16,15 +16,31 @@ from app.domain.tools.value_objects import ToolKind
 
 
 class CompositeToolInvoker(ToolInvoker):
-    """Route an invocation to the invoker registered for the tool's kind."""
+    """Route an invocation to the invoker registered for the tool's kind.
 
-    def __init__(self, builtin: ToolInvoker) -> None:
+    http and mcp invokers are optional: when absent, that kind is reported as
+    unsupported (this keeps builtin-only wiring, used in some tests, valid).
+    """
+
+    def __init__(
+        self,
+        builtin: ToolInvoker,
+        http: ToolInvoker | None = None,
+        mcp: ToolInvoker | None = None,
+    ) -> None:
         self._builtin = builtin
+        self._http = http
+        self._mcp = mcp
 
     async def invoke(self, invocation: ToolInvocation) -> dict[str, Any]:
-        if invocation.tool.kind is ToolKind.BUILTIN:
+        kind = invocation.tool.kind
+        if kind is ToolKind.BUILTIN:
             return await self._builtin.invoke(invocation)
-        raise ToolKindNotSupportedError(invocation.tool.kind.value)
+        if kind is ToolKind.HTTP and self._http is not None:
+            return await self._http.invoke(invocation)
+        if kind is ToolKind.MCP and self._mcp is not None:
+            return await self._mcp.invoke(invocation)
+        raise ToolKindNotSupportedError(kind.value)
 
 
 BuiltinHandler = Callable[["BuiltinToolInvoker", ToolInvocation], Awaitable[dict[str, Any]]]
