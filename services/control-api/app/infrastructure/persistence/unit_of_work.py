@@ -19,7 +19,11 @@ from app.infrastructure.persistence.identity_repository import (
     SqlAlchemyTenantRepository,
     SqlAlchemyUserRepository,
 )
+from app.infrastructure.persistence.outbox_repository import SqlAlchemyOutboxRepository
 from app.infrastructure.persistence.run_repository import SqlAlchemyRunRepository
+from app.infrastructure.persistence.run_view_repository import (
+    SqlAlchemyRunViewRepository,
+)
 from app.infrastructure.persistence.tools_repository import SqlAlchemyToolRepository
 from app.infrastructure.persistence.workflow_repository import (
     SqlAlchemyWorkflowRepository,
@@ -44,6 +48,8 @@ class SqlAlchemyUnitOfWork(UnitOfWork):
         self.workflow_versions = SqlAlchemyWorkflowVersionRepository(self._session)
         self.run_executions = SqlAlchemyRunExecutionRepository(self._session)
         self.approvals = SqlAlchemyApprovalRepository(self._session)
+        self.outbox = SqlAlchemyOutboxRepository(self._session)
+        self.run_view = SqlAlchemyRunViewRepository(self._session)
         return self
 
     async def __aexit__(

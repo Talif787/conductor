@@ -35,6 +35,9 @@ dev = [
     "ruff>=0.4",
     "mypy>=1.10",
 ]
+kafka = [
+    "aiokafka>=0.11",
+]
 
 [tool.hatch.build.targets.wheel]
 packages = ["app"]

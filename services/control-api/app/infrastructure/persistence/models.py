@@ -62,7 +62,7 @@ class RunEventModel(Base):
 
     __table_args__ = (
         Index("ix_run_events_run", "run_id", "occurred_at"),
-        Index("ix_run_events_unpublished", "published"),
+        Index("ix_run_events_unpublished", "published", "occurred_at"),
     )
 
 
@@ -238,3 +238,24 @@ class ApprovalRequestModel(Base):
         Index("ix_approvals_tenant_status", "tenant_id", "status"),
         Index("ix_approvals_run", "run_id"),
     )
+
+
+class RunViewModel(Base):
+    """CQRS read model: denormalized current state of each run.
+
+    Maintained by the outbox relay's projector, not by the command side. Keys
+    are stored as text so the read model stays decoupled from the write schema.
+    """
+
+    __tablename__ = "run_view"
+
+    run_id: Mapped[str] = mapped_column(String(64), primary_key=True)
+    tenant_id: Mapped[str] = mapped_column(String(64), nullable=False)
+    status: Mapped[str] = mapped_column(String(32), nullable=False)
+    goal: Mapped[str] = mapped_column(Text, nullable=False, default="")
+    priority: Mapped[str] = mapped_column(String(16), nullable=False, default="normal")
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    event_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+
+    __table_args__ = (Index("ix_run_view_tenant_status", "tenant_id", "status"),)
