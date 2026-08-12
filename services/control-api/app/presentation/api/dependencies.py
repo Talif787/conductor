@@ -30,6 +30,10 @@ from app.application.governance.query_handlers import (
     ListApprovalsHandler,
 )
 from app.application.ports import EventPublisher, UnitOfWork
+from app.application.projections.query_handlers import (
+    GetRunStatsHandler,
+    ListRunViewsHandler,
+)
 from app.application.run.command_handlers import CancelRunHandler, CreateRunHandler
 from app.application.run.query_handlers import GetRunHandler, ListRunsHandler
 from app.application.tools.command_handlers import RegisterToolHandler, UpdateToolHandler
@@ -362,3 +366,15 @@ def provide_list_approvals_handler(
     uow_factory: Annotated[UnitOfWorkFactory, Depends(provide_uow_factory)],
 ) -> ListApprovalsHandler:
     return ListApprovalsHandler(uow_factory)
+
+
+def provide_get_run_stats_handler(
+    uow_factory: Annotated[UnitOfWorkFactory, Depends(provide_uow_factory)],
+) -> GetRunStatsHandler:
+    return GetRunStatsHandler(uow_factory)
+
+
+def provide_list_run_views_handler(
+    uow_factory: Annotated[UnitOfWorkFactory, Depends(provide_uow_factory)],
+) -> ListRunViewsHandler:
+    return ListRunViewsHandler(uow_factory)

@@ -263,3 +263,28 @@ class ApprovalDecisionRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     note: str | None = None
+
+
+class RunStatsResponse(BaseModel):
+    total: int
+    active: int
+    by_status: dict[str, int]
+
+    @classmethod
+    def from_dto(cls, dto: Any) -> RunStatsResponse:
+        return cls(**asdict(dto))
+
+
+class RunViewResponse(BaseModel):
+    run_id: str
+    tenant_id: str
+    status: str
+    goal: str
+    priority: str
+    created_at: str
+    updated_at: str
+    event_count: int
+
+    @classmethod
+    def from_dto(cls, dto: Any) -> RunViewResponse:
+        return cls(**asdict(dto))

@@ -6,6 +6,8 @@ import abc
 from collections.abc import Sequence
 from types import TracebackType
 
+from app.application.eventing.ports import OutboxRepository
+from app.application.projections.run_view import RunViewRepository
 from app.domain.execution.repository import RunExecutionRepository
 from app.domain.governance.repository import ApprovalRepository
 from app.domain.identity.repository import (
@@ -36,6 +38,8 @@ class UnitOfWork(abc.ABC):
     workflow_versions: WorkflowVersionRepository
     run_executions: RunExecutionRepository
     approvals: ApprovalRepository
+    outbox: OutboxRepository
+    run_view: RunViewRepository
 
     async def __aenter__(self) -> UnitOfWork:
         return self

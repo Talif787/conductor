@@ -7,7 +7,10 @@ from collections.abc import Sequence
 from dataclasses import dataclass, field
 from types import TracebackType
 
+from app.application.eventing.ports import OutboxRepository
+from app.application.eventing.records import EventRecord
 from app.application.ports import UnitOfWork
+from app.application.projections.run_view import RunView, RunViewRepository
 from app.domain.execution.entities import RunExecution
 from app.domain.execution.repository import RunExecutionRepository
 from app.domain.governance.entities import ApprovalRequest
@@ -53,6 +56,9 @@ class InMemoryDatabase:
     workflow_versions: dict[uuid.UUID, WorkflowVersion] = field(default_factory=dict)
     run_executions: dict[uuid.UUID, RunExecution] = field(default_factory=dict)
     approvals: dict[uuid.UUID, ApprovalRequest] = field(default_factory=dict)
+    outbox_events: list[EventRecord] = field(default_factory=list)
+    outbox_published: set[str] = field(default_factory=set)
+    run_view: dict[str, RunView] = field(default_factory=dict)
 
 
 class InMemoryRunRepository(RunRepository):
@@ -169,6 +175,8 @@ class InMemoryUnitOfWork(UnitOfWork):
         self.workflow_versions = InMemoryWorkflowVersionRepository(self._db.workflow_versions)
         self.run_executions = InMemoryRunExecutionRepository(self._db.run_executions)
         self.approvals = InMemoryApprovalRepository(self._db.approvals)
+        self.outbox = InMemoryOutboxRepository(self._db.outbox_events, self._db.outbox_published)
+        self.run_view = InMemoryRunViewRepository(self._db.run_view)
         return self
 
     async def __aexit__(
@@ -321,3 +329,43 @@ class InMemoryApprovalRepository(ApprovalRepository):
             items = [a for a in items if a.status == status]
         items.sort(key=lambda a: a.requested_at, reverse=True)
         return items
+
+
+class InMemoryOutboxRepository(OutboxRepository):
+    def __init__(self, events: list[EventRecord], published: set[str]) -> None:
+        self._events = events
+        self._published = published
+
+    async def fetch_unpublished(self, limit: int) -> list[EventRecord]:
+        pending = [e for e in self._events if e.event_id not in self._published]
+        pending.sort(key=lambda e: (e.occurred_at, e.event_id))
+        return pending[:limit]
+
+    async def mark_published(self, event_ids: Sequence[str]) -> None:
+        self._published.update(event_ids)
+
+
+class InMemoryRunViewRepository(RunViewRepository):
+    def __init__(self, store: dict[str, RunView]) -> None:
+        self._store = store
+
+    async def get(self, tenant_id: str, run_id: str) -> RunView | None:
+        view = self._store.get(run_id)
+        if view is not None and view.tenant_id == tenant_id:
+            return view
+        return None
+
+    async def upsert(self, view: RunView) -> None:
+        self._store[view.run_id] = view
+
+    async def list(self, tenant_id: str, limit: int) -> list[RunView]:
+        views = [v for v in self._store.values() if v.tenant_id == tenant_id]
+        views.sort(key=lambda v: v.updated_at, reverse=True)
+        return views[:limit]
+
+    async def status_counts(self, tenant_id: str) -> dict[str, int]:
+        counts: dict[str, int] = {}
+        for view in self._store.values():
+            if view.tenant_id == tenant_id:
+                counts[view.status] = counts.get(view.status, 0) + 1
+        return counts

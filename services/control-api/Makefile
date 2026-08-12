@@ -1,4 +1,4 @@
-.PHONY: install run worker test test-integration lint typecheck fmt migrate up down build
+.PHONY: install run worker relay test test-integration lint typecheck fmt migrate up down build
 
 install:
 	pip install -e ".[dev]"
@@ -8,6 +8,9 @@ run:
 
 worker:
 	python -m app.infrastructure.execution.temporal.worker
+
+relay:
+	python -m app.infrastructure.eventing.relay
 
 test:
 	pytest -m "not integration"

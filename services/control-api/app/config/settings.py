@@ -81,6 +81,16 @@ class PolicySettings(BaseSettings):
     denied_tool_kinds: list[str] = Field(default_factory=list)
 
 
+class EventingSettings(BaseSettings):
+    model_config = SettingsConfigDict(env_prefix="CONDUCTOR_EVENTS_", extra="ignore")
+
+    bus: str = "null"  # "null" or "kafka"
+    kafka_bootstrap_servers: str = "localhost:9092"
+    topic: str = "conductor.run-events"
+    relay_batch_size: int = 100
+    relay_poll_interval_seconds: float = 1.0
+
+
 class AppSettings(BaseSettings):
     model_config = SettingsConfigDict(env_prefix="CONDUCTOR_", extra="ignore")
 
@@ -98,6 +108,7 @@ class AppSettings(BaseSettings):
     execution: ExecutionSettings = Field(default_factory=ExecutionSettings)
     temporal: TemporalSettings = Field(default_factory=TemporalSettings)
     policy: PolicySettings = Field(default_factory=PolicySettings)
+    events: EventingSettings = Field(default_factory=EventingSettings)
 
     @property
     def is_production(self) -> bool:
