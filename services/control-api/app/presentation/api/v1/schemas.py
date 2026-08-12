@@ -222,6 +222,7 @@ class StepExecutionResponse(BaseModel):
     error: str | None
     started_at: str | None
     finished_at: str | None
+    cost_usd: float
 
 
 class RunExecutionResponse(BaseModel):
@@ -230,6 +231,7 @@ class RunExecutionResponse(BaseModel):
     error: str | None
     started_at: str
     finished_at: str | None
+    total_cost_usd: float
     steps: list[StepExecutionResponse]
 
     @classmethod
@@ -240,6 +242,7 @@ class RunExecutionResponse(BaseModel):
             error=dto.error,
             started_at=dto.started_at,
             finished_at=dto.finished_at,
+            total_cost_usd=dto.total_cost_usd,
             steps=[StepExecutionResponse(**asdict(s)) for s in dto.steps],
         )
 

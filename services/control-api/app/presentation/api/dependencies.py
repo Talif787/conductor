@@ -50,6 +50,7 @@ from app.application.workflows.query_handlers import (
     ListWorkflowsHandler,
 )
 from app.config.settings import AppSettings, get_settings
+from app.domain.execution.pricing import TokenPricing
 from app.domain.identity.errors import AuthenticationError, PermissionDeniedError
 from app.domain.identity.roles import Permission
 from app.infrastructure.execution.http_invoker import HttpToolInvoker
@@ -296,7 +297,13 @@ def provide_execution_engine(
         http=HttpToolInvoker(http_client),
         mcp=McpToolInvoker(mcp_client),
     )
-    return LocalExecutionEngine(invoker, max_concurrency=settings.execution.max_concurrency)
+    pricing = TokenPricing(
+        prompt_usd_per_1k=settings.cost.prompt_usd_per_1k,
+        completion_usd_per_1k=settings.cost.completion_usd_per_1k,
+    )
+    return LocalExecutionEngine(
+        invoker, max_concurrency=settings.execution.max_concurrency, pricing=pricing
+    )
 
 
 def provide_execute_run_handler(

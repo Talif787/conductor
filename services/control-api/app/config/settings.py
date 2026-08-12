@@ -91,6 +91,13 @@ class EventingSettings(BaseSettings):
     relay_poll_interval_seconds: float = 1.0
 
 
+class CostSettings(BaseSettings):
+    model_config = SettingsConfigDict(env_prefix="CONDUCTOR_COST_", extra="ignore")
+
+    prompt_usd_per_1k: float = 0.00015
+    completion_usd_per_1k: float = 0.0006
+
+
 class AppSettings(BaseSettings):
     model_config = SettingsConfigDict(env_prefix="CONDUCTOR_", extra="ignore")
 
@@ -109,6 +116,7 @@ class AppSettings(BaseSettings):
     temporal: TemporalSettings = Field(default_factory=TemporalSettings)
     policy: PolicySettings = Field(default_factory=PolicySettings)
     events: EventingSettings = Field(default_factory=EventingSettings)
+    cost: CostSettings = Field(default_factory=CostSettings)
 
     @property
     def is_production(self) -> bool:

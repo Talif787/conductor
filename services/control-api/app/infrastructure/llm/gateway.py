@@ -11,10 +11,17 @@ class FakeLLMGateway(LLMGateway):
 
     async def complete(self, request: LLMRequest) -> LLMResponse:
         preview = request.prompt.strip().replace("\n", " ")[:120]
+        text = f"[fake:{request.model}] {preview}"
+        prompt_tokens = len(request.prompt.split())
+        completion_tokens = len(text.split())
         return LLMResponse(
-            text=f"[fake:{request.model}] {preview}",
+            text=text,
             model=request.model,
-            usage={"prompt_tokens": len(request.prompt.split())},
+            usage={
+                "prompt_tokens": prompt_tokens,
+                "completion_tokens": completion_tokens,
+                "total_tokens": prompt_tokens + completion_tokens,
+            },
         )
 
 

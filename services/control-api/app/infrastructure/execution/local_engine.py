@@ -12,11 +12,13 @@ from datetime import UTC, datetime
 
 from app.application.execution.ports import ExecutionEngine, ToolInvocation, ToolInvoker
 from app.domain.execution.entities import RunExecution, StepExecution
+from app.domain.execution.pricing import TokenPricing, estimate_cost_usd
 from app.domain.execution.value_objects import ExecutionStatus
 from app.domain.run.entities import Run
 from app.domain.shared.identifiers import RunExecutionId, StepExecutionId
 from app.domain.tools.entities import Tool
 from app.domain.workflows.value_objects import Step, WorkflowDefinition
+from app.infrastructure.observability.metrics import LLM_COST_USD_TOTAL
 
 _FAILED_OR_SKIPPED = {ExecutionStatus.FAILED, ExecutionStatus.SKIPPED}
 
@@ -26,9 +28,15 @@ def _utcnow() -> datetime:
 
 
 class LocalExecutionEngine(ExecutionEngine):
-    def __init__(self, invoker: ToolInvoker, max_concurrency: int = 8) -> None:
+    def __init__(
+        self,
+        invoker: ToolInvoker,
+        max_concurrency: int = 8,
+        pricing: TokenPricing | None = None,
+    ) -> None:
         self._invoker = invoker
         self._max_concurrency = max(1, max_concurrency)
+        self._pricing = pricing or TokenPricing()
 
     async def execute(
         self,
@@ -78,6 +86,7 @@ class LocalExecutionEngine(ExecutionEngine):
 
         ordered = [records[step.step_id] for step in steps if step.step_id in records]
         overall, error = _summarize(ordered)
+        total_cost = round(sum(s.cost_usd for s in ordered), 6)
         return RunExecution(
             id=RunExecutionId.new(),
             run_id=run.id,
@@ -87,6 +96,7 @@ class LocalExecutionEngine(ExecutionEngine):
             finished_at=_utcnow(),
             error=error,
             steps=ordered,
+            total_cost_usd=total_cost,
         )
 
     async def _run_step(
@@ -124,11 +134,22 @@ class LocalExecutionEngine(ExecutionEngine):
                 output = await self._invoker.invoke(invocation)
             record.status = ExecutionStatus.SUCCEEDED
             record.output = output
+            record.cost_usd = self._step_cost(output)
         except Exception as exc:  # noqa: BLE001
             record.status = ExecutionStatus.FAILED
             record.error = str(exc)
         record.finished_at = _utcnow()
         return record
+
+    def _step_cost(self, output: dict) -> float:
+        usage = output.get("usage") if isinstance(output, dict) else None
+        if not isinstance(usage, dict):
+            return 0.0
+        cost = estimate_cost_usd(usage, self._pricing)
+        if cost > 0:
+            model = str(output.get("model", "unknown"))
+            LLM_COST_USD_TOTAL.labels(model=model).inc(cost)
+        return cost
 
 
 def _skipped_or_failed(status: dict[str, ExecutionStatus], dependencies: set[str]) -> set[str]:

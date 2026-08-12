@@ -18,6 +18,7 @@ def execution_to_models(
         error=execution.error,
         started_at=execution.started_at,
         finished_at=execution.finished_at,
+        total_cost_usd=execution.total_cost_usd,
     )
     children = [
         StepExecutionModel(
@@ -31,6 +32,7 @@ def execution_to_models(
             error=step.error,
             started_at=step.started_at,
             finished_at=step.finished_at,
+            cost_usd=step.cost_usd,
         )
         for step in execution.steps
     ]
@@ -46,6 +48,7 @@ def models_to_execution(parent: RunExecutionModel, steps: list[StepExecutionMode
         started_at=parent.started_at,
         finished_at=parent.finished_at,
         error=parent.error,
+        total_cost_usd=parent.total_cost_usd,
         steps=[
             StepExecution(
                 id=StepExecutionId(row.id),
@@ -57,6 +60,7 @@ def models_to_execution(parent: RunExecutionModel, steps: list[StepExecutionMode
                 error=row.error,
                 started_at=row.started_at,
                 finished_at=row.finished_at,
+                cost_usd=row.cost_usd,
             )
             for row in sorted(steps, key=lambda r: r.position)
         ],

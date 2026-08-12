@@ -14,6 +14,7 @@ def _step_dto(step: StepExecution) -> StepExecutionDTO:
         error=step.error,
         started_at=step.started_at.isoformat() if step.started_at else None,
         finished_at=step.finished_at.isoformat() if step.finished_at else None,
+        cost_usd=step.cost_usd,
     )
 
 
@@ -24,5 +25,6 @@ def to_execution_dto(execution: RunExecution) -> RunExecutionDTO:
         error=execution.error,
         started_at=execution.started_at.isoformat(),
         finished_at=execution.finished_at.isoformat() if execution.finished_at else None,
+        total_cost_usd=execution.total_cost_usd,
         steps=[_step_dto(s) for s in sorted(execution.steps, key=lambda s: s.position)],
     )
