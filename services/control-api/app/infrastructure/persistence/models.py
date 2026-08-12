@@ -8,6 +8,7 @@ from datetime import datetime
 from sqlalchemy import (
     Boolean,
     DateTime,
+    Float,
     ForeignKey,
     Index,
     Integer,
@@ -194,6 +195,7 @@ class RunExecutionModel(Base):
     error: Mapped[str | None] = mapped_column(Text, nullable=True)
     started_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
     finished_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    total_cost_usd: Mapped[float] = mapped_column(Float, nullable=False, server_default="0")
 
     __table_args__ = (Index("ix_run_executions_run", "run_id"),)
 
@@ -215,6 +217,7 @@ class StepExecutionModel(Base):
     error: Mapped[str | None] = mapped_column(Text, nullable=True)
     started_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     finished_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    cost_usd: Mapped[float] = mapped_column(Float, nullable=False, server_default="0")
 
     __table_args__ = (Index("ix_run_step_executions_exec", "run_execution_id"),)
 

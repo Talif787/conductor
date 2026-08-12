@@ -23,3 +23,10 @@ EVENTS_PUBLISHED_TOTAL = Counter(
     "Domain events drained from the outbox and published by the relay.",
     labelnames=("event_name",),
 )
+
+
+LLM_COST_USD_TOTAL = Counter(
+    "conductor_llm_cost_usd_total",
+    "Estimated LLM cost in USD accrued by executed steps.",
+    labelnames=("model",),
+)

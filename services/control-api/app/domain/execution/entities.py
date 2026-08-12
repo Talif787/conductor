@@ -22,6 +22,7 @@ class StepExecution:
     error: str | None = None
     started_at: datetime | None = None
     finished_at: datetime | None = None
+    cost_usd: float = 0.0
 
 
 @dataclass
@@ -34,6 +35,7 @@ class RunExecution:
     finished_at: datetime | None = None
     error: str | None = None
     steps: list[StepExecution] = field(default_factory=list)
+    total_cost_usd: float = 0.0
 
     @property
     def succeeded(self) -> bool:

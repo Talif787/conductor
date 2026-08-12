@@ -89,7 +89,7 @@ async def _llm(invoker: BuiltinToolInvoker, invocation: ToolInvocation) -> dict[
         prompt = "\n".join(p for p in parts if p) or invocation.parameters.get("goal", "")
     model = str(invocation.parameters.get("model", "conductor-default"))
     response = await invoker.llm.complete(LLMRequest(prompt=str(prompt), model=model))
-    return {"completion": response.text, "model": response.model}
+    return {"completion": response.text, "model": response.model, "usage": response.usage}
 
 
 _BUILTINS: dict[str, BuiltinHandler] = {
