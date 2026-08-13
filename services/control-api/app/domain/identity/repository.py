@@ -36,6 +36,9 @@ class MembershipRepository(abc.ABC):
     @abc.abstractmethod
     async def find_by_user(self, user_id: UserId) -> list[Membership]: ...
 
+    @abc.abstractmethod
+    async def find_by_tenant(self, tenant_id: TenantId) -> list[Membership]: ...
+
 
 class RefreshTokenRepository(abc.ABC):
     @abc.abstractmethod
