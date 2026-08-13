@@ -47,6 +47,7 @@ from app.application.workflows.command_handlers import (
 )
 from app.application.workflows.query_handlers import (
     GetWorkflowHandler,
+    GetWorkflowVersionHandler,
     ListWorkflowsHandler,
 )
 from app.config.settings import AppSettings, get_settings
@@ -252,6 +253,12 @@ def provide_get_workflow_handler(
     uow_factory: Annotated[UnitOfWorkFactory, Depends(provide_uow_factory)],
 ) -> GetWorkflowHandler:
     return GetWorkflowHandler(uow_factory)
+
+
+def provide_get_workflow_version_handler(
+    uow_factory: Annotated[UnitOfWorkFactory, Depends(provide_uow_factory)],
+) -> GetWorkflowVersionHandler:
+    return GetWorkflowVersionHandler(uow_factory)
 
 
 def provide_list_workflows_handler(

@@ -21,14 +21,23 @@ from app.application.workflows.commands import (
     PublishVersion,
     UpdateDraft,
 )
-from app.application.workflows.queries import GetWorkflow, ListWorkflows
-from app.application.workflows.query_handlers import GetWorkflowHandler, ListWorkflowsHandler
+from app.application.workflows.queries import (
+    GetWorkflow,
+    GetWorkflowVersion,
+    ListWorkflows,
+)
+from app.application.workflows.query_handlers import (
+    GetWorkflowHandler,
+    GetWorkflowVersionHandler,
+    ListWorkflowsHandler,
+)
 from app.domain.identity.roles import Permission
 from app.presentation.api.dependencies import (
     provide_archive_workflow_handler,
     provide_create_draft_handler,
     provide_create_workflow_handler,
     provide_get_workflow_handler,
+    provide_get_workflow_version_handler,
     provide_list_workflows_handler,
     provide_publish_version_handler,
     provide_update_draft_handler,
@@ -77,6 +86,23 @@ async def get_workflow(
         GetWorkflow(tenant_id=str(principal.tenant_id), workflow_id=workflow_id)
     )
     return WorkflowResponse.from_dto(dto)
+
+
+@router.get("/{workflow_id}/versions/{version}", response_model=WorkflowVersionResponse)
+async def get_workflow_version(
+    workflow_id: str,
+    version: int,
+    principal: Annotated[Principal, Depends(require_permission(Permission.WORKFLOWS_READ))],
+    handler: Annotated[GetWorkflowVersionHandler, Depends(provide_get_workflow_version_handler)],
+) -> WorkflowVersionResponse:
+    dto = await handler.handle(
+        GetWorkflowVersion(
+            tenant_id=str(principal.tenant_id),
+            workflow_id=workflow_id,
+            version=version,
+        )
+    )
+    return WorkflowVersionResponse.from_dto(dto)
 
 
 @router.put("/{workflow_id}/versions/{version}", response_model=WorkflowVersionResponse)
