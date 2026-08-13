@@ -134,6 +134,9 @@ class InMemoryMembershipRepository(MembershipRepository):
     async def find_by_user(self, user_id: UserId) -> list[Membership]:
         return [m for m in self._store.values() if m.user_id == user_id]
 
+    async def find_by_tenant(self, tenant_id: TenantId) -> list[Membership]:
+        return [m for m in self._store.values() if m.tenant_id == tenant_id]
+
 
 class InMemoryRefreshTokenRepository(RefreshTokenRepository):
     def __init__(self, store: dict[uuid.UUID, RefreshToken]) -> None:

@@ -291,3 +291,13 @@ class RunViewResponse(BaseModel):
     @classmethod
     def from_dto(cls, dto: Any) -> RunViewResponse:
         return cls(**asdict(dto))
+
+
+class MemberResponse(BaseModel):
+    user_id: str
+    email: str
+    roles: list[str]
+
+    @classmethod
+    def from_dto(cls, dto: Any) -> MemberResponse:
+        return cls(**asdict(dto))

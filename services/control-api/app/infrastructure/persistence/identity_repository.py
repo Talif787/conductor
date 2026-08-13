@@ -75,6 +75,11 @@ class SqlAlchemyMembershipRepository(MembershipRepository):
         models = (await self._session.execute(stmt)).scalars().all()
         return [model_to_membership(m) for m in models]
 
+    async def find_by_tenant(self, tenant_id: TenantId) -> list[Membership]:
+        stmt = select(MembershipModel).where(MembershipModel.tenant_id == tenant_id.value)
+        models = (await self._session.execute(stmt)).scalars().all()
+        return [model_to_membership(m) for m in models]
+
 
 class SqlAlchemyRefreshTokenRepository(RefreshTokenRepository):
     def __init__(self, session: AsyncSession) -> None:

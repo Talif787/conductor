@@ -29,6 +29,7 @@ from app.application.governance.query_handlers import (
     GetApprovalHandler,
     ListApprovalsHandler,
 )
+from app.application.members.query_handlers import ListMembersHandler
 from app.application.ports import EventPublisher, UnitOfWork
 from app.application.projections.query_handlers import (
     GetRunStatsHandler,
@@ -259,6 +260,12 @@ def provide_get_workflow_version_handler(
     uow_factory: Annotated[UnitOfWorkFactory, Depends(provide_uow_factory)],
 ) -> GetWorkflowVersionHandler:
     return GetWorkflowVersionHandler(uow_factory)
+
+
+def provide_list_members_handler(
+    uow_factory: Annotated[UnitOfWorkFactory, Depends(provide_uow_factory)],
+) -> ListMembersHandler:
+    return ListMembersHandler(uow_factory)
 
 
 def provide_list_workflows_handler(
