@@ -14,8 +14,9 @@ from app.domain.identity.repository import (
     TenantRepository,
     UserRepository,
 )
+from app.domain.identity.roles import Role
 from app.domain.identity.value_objects import Email
-from app.domain.shared.identifiers import TenantId, UserId
+from app.domain.shared.identifiers import MembershipId, TenantId, UserId
 from app.infrastructure.persistence.identity_mappers import (
     membership_to_model,
     model_to_membership,
@@ -79,6 +80,13 @@ class SqlAlchemyMembershipRepository(MembershipRepository):
         stmt = select(MembershipModel).where(MembershipModel.tenant_id == tenant_id.value)
         models = (await self._session.execute(stmt)).scalars().all()
         return [model_to_membership(m) for m in models]
+
+    async def update_role(self, membership_id: MembershipId, role: Role) -> None:
+        await self._session.execute(
+            update(MembershipModel)
+            .where(MembershipModel.id == membership_id.value)
+            .values(role=role.value)
+        )
 
 
 class SqlAlchemyRefreshTokenRepository(RefreshTokenRepository):

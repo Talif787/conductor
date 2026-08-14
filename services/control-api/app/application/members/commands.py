@@ -11,3 +11,10 @@ class AddMember:
     email: str
     password: str
     role: str
+
+
+@dataclass(frozen=True, slots=True)
+class ChangeMemberRole:
+    tenant_id: str
+    user_id: str
+    role: str

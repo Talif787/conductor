@@ -310,3 +310,9 @@ class AddMemberRequest(BaseModel):
     email: str
     password: str = Field(min_length=8)
     role: Literal["admin", "author", "operator", "viewer"]
+
+
+class ChangeMemberRoleRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    role: Literal["admin", "author", "operator", "viewer"]

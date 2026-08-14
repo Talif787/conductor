@@ -23,6 +23,7 @@ from app.domain.identity.repository import (
     TenantRepository,
     UserRepository,
 )
+from app.domain.identity.roles import Role
 from app.domain.identity.value_objects import Email
 from app.domain.run.entities import Run
 from app.domain.run.events import DomainEvent
@@ -30,6 +31,7 @@ from app.domain.run.repository import Page, PagedRuns, RunFilter, RunRepository
 from app.domain.run.value_objects import RunId
 from app.domain.shared.identifiers import (
     ApprovalId,
+    MembershipId,
     TenantId,
     ToolId,
     UserId,
@@ -136,6 +138,11 @@ class InMemoryMembershipRepository(MembershipRepository):
 
     async def find_by_tenant(self, tenant_id: TenantId) -> list[Membership]:
         return [m for m in self._store.values() if m.tenant_id == tenant_id]
+
+    async def update_role(self, membership_id: MembershipId, role: Role) -> None:
+        membership = self._store.get(membership_id.value)
+        if membership is not None:
+            membership.role = role
 
 
 class InMemoryRefreshTokenRepository(RefreshTokenRepository):

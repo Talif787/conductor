@@ -29,7 +29,10 @@ from app.application.governance.query_handlers import (
     GetApprovalHandler,
     ListApprovalsHandler,
 )
-from app.application.members.command_handlers import AddMemberHandler
+from app.application.members.command_handlers import (
+    AddMemberHandler,
+    ChangeMemberRoleHandler,
+)
 from app.application.members.query_handlers import ListMembersHandler
 from app.application.ports import EventPublisher, UnitOfWork
 from app.application.projections.query_handlers import (
@@ -274,6 +277,12 @@ def provide_add_member_handler(
     hasher: Annotated[PasswordHasher, Depends(provide_password_hasher)],
 ) -> AddMemberHandler:
     return AddMemberHandler(uow_factory, hasher)
+
+
+def provide_change_member_role_handler(
+    uow_factory: Annotated[UnitOfWorkFactory, Depends(provide_uow_factory)],
+) -> ChangeMemberRoleHandler:
+    return ChangeMemberRoleHandler(uow_factory)
 
 
 def provide_list_workflows_handler(

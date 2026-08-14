@@ -6,8 +6,9 @@ import abc
 import uuid
 
 from app.domain.identity.entities import Membership, RefreshToken, Tenant, User
+from app.domain.identity.roles import Role
 from app.domain.identity.value_objects import Email
-from app.domain.shared.identifiers import TenantId, UserId
+from app.domain.shared.identifiers import MembershipId, TenantId, UserId
 
 
 class TenantRepository(abc.ABC):
@@ -38,6 +39,9 @@ class MembershipRepository(abc.ABC):
 
     @abc.abstractmethod
     async def find_by_tenant(self, tenant_id: TenantId) -> list[Membership]: ...
+
+    @abc.abstractmethod
+    async def update_role(self, membership_id: MembershipId, role: Role) -> None: ...
 
 
 class RefreshTokenRepository(abc.ABC):

@@ -21,9 +21,11 @@ from app.domain.governance.errors import (
 )
 from app.domain.identity.errors import (
     AuthenticationError,
+    CannotChangeOwnerRoleError,
     EmailAlreadyExistsError,
     IdentityError,
     InvalidCredentialsError,
+    MemberNotFoundError,
     PermissionDeniedError,
     RefreshTokenInvalidError,
     TokenReuseError,
@@ -109,6 +111,16 @@ def register_exception_handlers(app: FastAPI) -> None:
     @app.exception_handler(PermissionDeniedError)
     async def _handle_permission(request: Request, exc: PermissionDeniedError) -> JSONResponse:
         return _problem(403, "Permission denied", str(exc), request, "permission-denied")
+
+    @app.exception_handler(MemberNotFoundError)
+    async def _handle_member_missing(request: Request, exc: MemberNotFoundError) -> JSONResponse:
+        return _problem(404, "Member not found", str(exc), request, "member-not-found")
+
+    @app.exception_handler(CannotChangeOwnerRoleError)
+    async def _handle_owner_immutable(
+        request: Request, exc: CannotChangeOwnerRoleError
+    ) -> JSONResponse:
+        return _problem(409, "Owner role is immutable", str(exc), request, "owner-role-immutable")
 
     @app.exception_handler(IdentityError)
     async def _handle_identity(request: Request, exc: IdentityError) -> JSONResponse:
