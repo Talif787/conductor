@@ -34,3 +34,14 @@ class PermissionDeniedError(IdentityError):
     def __init__(self, permission: str) -> None:
         super().__init__(f"missing required permission '{permission}'")
         self.permission = permission
+
+
+class MemberNotFoundError(IdentityError):
+    def __init__(self, user_id: str) -> None:
+        super().__init__(f"no member '{user_id}' in this tenant")
+        self.user_id = user_id
+
+
+class CannotChangeOwnerRoleError(IdentityError):
+    def __init__(self) -> None:
+        super().__init__("the owner's role cannot be changed")
