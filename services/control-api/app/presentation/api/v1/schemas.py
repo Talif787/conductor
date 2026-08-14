@@ -272,6 +272,7 @@ class RunStatsResponse(BaseModel):
     total: int
     active: int
     by_status: dict[str, int]
+    total_cost_usd: float
 
     @classmethod
     def from_dto(cls, dto: Any) -> RunStatsResponse:

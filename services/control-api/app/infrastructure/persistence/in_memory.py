@@ -298,6 +298,9 @@ class InMemoryRunExecutionRepository(RunExecutionRepository):
             return execution
         return None
 
+    async def total_cost(self, tenant_id: TenantId) -> float:
+        return sum(e.total_cost_usd for e in self._store.values() if e.tenant_id == tenant_id)
+
 
 class InMemoryApprovalRepository(ApprovalRepository):
     def __init__(self, store: dict[uuid.UUID, ApprovalRequest]) -> None:
