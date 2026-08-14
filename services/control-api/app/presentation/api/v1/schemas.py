@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from dataclasses import asdict
 from datetime import datetime
-from typing import Any
+from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -302,3 +302,11 @@ class MemberResponse(BaseModel):
     @classmethod
     def from_dto(cls, dto: Any) -> MemberResponse:
         return cls(**asdict(dto))
+
+
+class AddMemberRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    email: str
+    password: str = Field(min_length=8)
+    role: Literal["admin", "author", "operator", "viewer"]
