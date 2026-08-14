@@ -6,6 +6,7 @@ from app.application.ports import UnitOfWork
 from app.application.projections.dtos import RunStatsDTO, RunViewDTO
 from app.application.projections.queries import GetRunStats, ListRunViews
 from app.application.projections.run_view import RunView
+from app.domain.shared.identifiers import TenantId
 
 UnitOfWorkFactory = Callable[[], UnitOfWork]
 
@@ -32,9 +33,10 @@ class GetRunStatsHandler:
     async def handle(self, query: GetRunStats) -> RunStatsDTO:
         async with self._uow_factory() as uow:
             counts = await uow.run_view.status_counts(query.tenant_id)
+            cost = await uow.run_executions.total_cost(TenantId.parse(query.tenant_id))
         total = sum(counts.values())
         active = sum(n for status, n in counts.items() if status not in _TERMINAL)
-        return RunStatsDTO(total=total, active=active, by_status=dict(counts))
+        return RunStatsDTO(total=total, active=active, by_status=dict(counts), total_cost_usd=cost)
 
 
 class ListRunViewsHandler:

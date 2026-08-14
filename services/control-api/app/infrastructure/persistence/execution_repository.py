@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.domain.execution.entities import RunExecution
@@ -41,3 +41,9 @@ class SqlAlchemyRunExecutionRepository(RunExecutionRepository):
         )
         steps = list((await self._session.execute(steps_stmt)).scalars().all())
         return models_to_execution(parent, steps)
+
+    async def total_cost(self, tenant_id: TenantId) -> float:
+        stmt = select(func.coalesce(func.sum(RunExecutionModel.total_cost_usd), 0.0)).where(
+            RunExecutionModel.tenant_id == tenant_id.value
+        )
+        return float((await self._session.execute(stmt)).scalar_one())

@@ -20,3 +20,4 @@ class RunStatsDTO:
     total: int
     active: int
     by_status: dict[str, int]
+    total_cost_usd: float

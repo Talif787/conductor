@@ -15,3 +15,6 @@ class RunExecutionRepository(abc.ABC):
 
     @abc.abstractmethod
     async def get(self, tenant_id: TenantId, run_id: RunId) -> RunExecution | None: ...
+
+    @abc.abstractmethod
+    async def total_cost(self, tenant_id: TenantId) -> float: ...
