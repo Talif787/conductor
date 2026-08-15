@@ -9,7 +9,7 @@ from app.domain.shared.identifiers import TenantId, UserId
 from app.infrastructure.security.tokens import JwtAccessTokenService
 
 
-def _service(secret: str = "test-secret") -> JwtAccessTokenService:
+def _service(secret: str = "test-secret-0123456789abcdef0123456789") -> JwtAccessTokenService:
     return JwtAccessTokenService(
         secret=secret,
         issuer="conductor",
@@ -42,9 +42,9 @@ def test_tampered_token_is_rejected() -> None:
 
 
 def test_wrong_secret_is_rejected() -> None:
-    issued = _service("secret-a").issue(_principal())
+    issued = _service("secret-a-0123456789abcdef0123456789ab").issue(_principal())
     with pytest.raises(AuthenticationError):
-        _service("secret-b").decode(issued.token)
+        _service("secret-b-0123456789abcdef0123456789ab").decode(issued.token)
 
 
 def test_garbage_token_is_rejected() -> None:

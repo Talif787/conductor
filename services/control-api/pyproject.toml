@@ -70,3 +70,9 @@ addopts = "-q"
 markers = [
     "integration: tests that require a live PostgreSQL database",
 ]
+filterwarnings = [
+    # Starlette's TestClient emits this through httpx; the suggested "httpx2"
+    # package does not exist, so this third-party deprecation is not actionable
+    # at our layer. Ignore it rather than let it clutter the test output.
+    "ignore:Using .httpx. with .starlette.testclient. is deprecated",
+]
