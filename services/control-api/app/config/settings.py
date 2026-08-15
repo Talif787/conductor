@@ -7,7 +7,7 @@ from functools import lru_cache
 from pydantic import Field, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
-_DEV_SECRET = "dev-insecure-change-me"  # noqa: S105
+_DEV_SECRET = "dev-insecure-change-me-not-for-production-use"  # noqa: S105
 
 
 class DatabaseSettings(BaseSettings):
