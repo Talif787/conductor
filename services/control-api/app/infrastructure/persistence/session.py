@@ -19,6 +19,10 @@ def create_engine(settings: DatabaseSettings) -> AsyncEngine:
         max_overflow=settings.max_overflow,
         pool_timeout=settings.pool_timeout_seconds,
         pool_recycle=settings.pool_recycle_seconds,
+        # Probe pooled connections before use so a Postgres restart (common in
+        # ephemeral dev environments) is transparently recovered instead of
+        # surfacing a stale-connection error on the next query.
+        pool_pre_ping=True,
         echo=settings.echo,
         future=True,
     )
