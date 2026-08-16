@@ -1,0 +1,46 @@
+# Render Blueprint for the Conductor control-api on the free tier ($0/month).
+# Spec: https://render.com/docs/blueprint-spec
+#
+# One free web service runs the FastAPI app AND the outbox relay in-process
+# (CONDUCTOR_EVENTS_RELAY_INPROCESS=true), so no separate always-on worker or
+# paid cron job is needed. The service sleeps after 15 minutes idle and cold
+# starts in 30-60s on the next request (accepted tradeoff for $0).
+#
+# The database is NOT defined here: Render's free Postgres expires after 30
+# days, so Conductor uses Neon (free, persistent). Set CONDUCTOR_DB_URL below.
+services:
+  - type: web
+    name: conductor-api
+    runtime: docker
+    rootDir: services/control-api
+    dockerfilePath: ./Dockerfile
+    plan: free
+    region: oregon
+    healthCheckPath: /livez
+    autoDeploy: true
+    envVars:
+      - key: CONDUCTOR_ENVIRONMENT
+        value: production
+      - key: CONDUCTOR_LOG_LEVEL
+        value: INFO
+      - key: WEB_CONCURRENCY
+        value: "1"
+      - key: RUN_MIGRATIONS_ON_START
+        value: "true"
+      - key: CONDUCTOR_EVENTS_RELAY_INPROCESS
+        value: "true"
+      - key: CONDUCTOR_EVENTS_BUS
+        value: "null"
+      # Render generates a strong value once and keeps it stable across deploys.
+      - key: CONDUCTOR_AUTH_SECRET
+        generateValue: true
+      # Set in the Render dashboard (secret). Neon URL with the +asyncpg scheme.
+      - key: CONDUCTOR_DB_URL
+        sync: false
+      # Optional: restrict CORS if the browser calls the API directly.
+      # JSON array, e.g. ["https://your-app.vercel.app"].
+      - key: CONDUCTOR_CORS_ALLOW_ORIGINS
+        sync: false
+      # Optional AI provider key (leave unset to use the built-in fake provider).
+      - key: CONDUCTOR_LLM_API_KEY
+        sync: false
