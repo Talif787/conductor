@@ -84,8 +84,20 @@ class OutboxRelay:
             if processed == 0:
                 await asyncio.sleep(self._poll_interval)
 
+    async def drain_all(self, max_batches: int = 10_000) -> int:
+        """Drain every currently-pending event, then return. Used by the
+        one-shot entrypoint (a scheduled `--once` run) so the process exits
+        instead of looping."""
+        total = 0
+        for _ in range(max_batches):
+            processed = await self.run_once()
+            if processed == 0:
+                break
+            total += processed
+        return total
 
-async def main() -> None:
+
+async def main(*, once: bool = False) -> None:
     logging.basicConfig(level=logging.INFO)
     from app.config.settings import get_settings
     from app.infrastructure.persistence.session import (
@@ -109,9 +121,13 @@ async def main() -> None:
         batch_size=settings.events.relay_batch_size,
         poll_interval=settings.events.relay_poll_interval_seconds,
     )
-    logger.info("relay.starting", bus=settings.events.bus, topic=settings.events.topic)
+    logger.info("relay.starting", bus=settings.events.bus, topic=settings.events.topic, once=once)
     try:
-        await relay.run()
+        if once:
+            processed = await relay.drain_all()
+            logger.info("relay.drained", processed=processed)
+        else:
+            await relay.run()
     finally:
         aclose = getattr(bus, "aclose", None)
         if aclose is not None:
@@ -120,4 +136,6 @@ async def main() -> None:
 
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    import sys
+
+    asyncio.run(main(once="--once" in sys.argv))

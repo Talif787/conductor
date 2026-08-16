@@ -89,6 +89,10 @@ class EventingSettings(BaseSettings):
     topic: str = "conductor.run-events"
     relay_batch_size: int = 100
     relay_poll_interval_seconds: float = 1.0
+    # Run the outbox relay as a background task inside the web process. Intended
+    # for single-worker, sleep-on-idle hosting where a separate always-on worker
+    # is not free. Only safe with WEB_CONCURRENCY=1 (one relay, no double-drain).
+    relay_inprocess: bool = False
 
 
 class CostSettings(BaseSettings):
