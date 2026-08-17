@@ -1,0 +1,63 @@
+# Production deploy for the backend via a Render deploy hook, then health and
+# smoke verification. Use this INSTEAD of Render's autoDeploy (set autoDeploy:
+# false) so this workflow owns deploy timing and the approval gate is real.
+#
+# The `environment: production` enables a required-reviewer approval gate when
+# available (public repos, or private repos on a paid plan). On a free private
+# repo, protection rules are unavailable; workflow_dispatch + concurrency still
+# provide a manual, non-overlapping deploy.
+name: production-deploy
+
+on:
+  workflow_dispatch: {}
+  push:
+    branches: [main]
+    paths:
+      - "services/control-api/**"
+
+concurrency:
+  group: production-deploy
+  cancel-in-progress: false # never cancel an in-flight production deploy
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - name: Trigger Render deploy
+        env:
+          HOOK: ${{ secrets.RENDER_DEPLOY_HOOK_URL }}
+        run: |
+          if [ -z "$HOOK" ]; then
+            echo "RENDER_DEPLOY_HOOK_URL secret is not set" >&2
+            exit 1
+          fi
+          curl -fsSL -X POST "$HOOK" -o /dev/null -w "deploy triggered: %{http_code}\n"
+
+      - name: Wait for backend to become healthy
+        env:
+          BASE: ${{ secrets.PRODUCTION_API_URL }}
+        run: |
+          if [ -z "$BASE" ]; then
+            echo "PRODUCTION_API_URL secret is not set" >&2
+            exit 1
+          fi
+          for i in $(seq 1 40); do
+            code="$(curl -s -o /dev/null -w '%{http_code}' "$BASE/readyz" || true)"
+            echo "attempt $i: readyz=$code"
+            [ "$code" = "200" ] && { echo "backend healthy"; exit 0; }
+            sleep 15
+          done
+          echo "backend did not report readyz=200 within the timeout" >&2
+          exit 1
+
+      - name: Smoke test
+        env:
+          BASE: ${{ secrets.PRODUCTION_API_URL }}
+        run: |
+          curl -fsS "$BASE/livez" -o /dev/null && echo "livez OK"
+          # openapi is public and cheap; confirms routing is up
+          curl -fsS "$BASE/openapi.json" -o /dev/null && echo "openapi OK"

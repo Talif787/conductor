@@ -1,0 +1,66 @@
+# Free security + supply-chain scanning that works on private repositories.
+# CodeQL is intentionally NOT used: it requires GitHub Advanced Security (paid)
+# on private repos. These tools are free regardless of repo visibility.
+# Note: SARIF upload to the Security tab also needs Advanced Security on private
+# repos, so findings gate the job by failing it rather than uploading SARIF.
+name: security
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  schedule:
+    - cron: "0 7 * * 1" # weekly, Monday 07:00 UTC
+
+permissions:
+  contents: read
+
+jobs:
+  trivy:
+    name: Trivy (deps, IaC, secrets)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Trivy filesystem scan
+        uses: aquasecurity/trivy-action@v0.36.0
+        with:
+          scan-type: fs
+          scan-ref: .
+          scanners: vuln,misconfig,secret
+          severity: HIGH,CRITICAL
+          ignore-unfixed: true
+          exit-code: "1" # fail the job on High/Critical findings
+
+  gitleaks:
+    name: gitleaks (secret scan)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # full history so historical secrets are caught
+      - name: Install gitleaks
+        run: |
+          version="8.21.2"
+          url="https://github.com/gitleaks/gitleaks/releases/download/v${version}/gitleaks_${version}_linux_x64.tar.gz"
+          curl -sSfL "$url" | tar -xz gitleaks
+          sudo mv gitleaks /usr/local/bin/gitleaks
+          gitleaks version
+      - name: Scan for secrets
+        run: gitleaks detect --source . --redact --no-banner
+
+  bandit:
+    name: Bandit (Python SAST)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: services/control-api
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Bandit
+        run: |
+          pip install bandit
+          # -ll: report medium+ severity; -r: recursive over the app package
+          bandit -r app -ll
