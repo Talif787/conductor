@@ -15,6 +15,7 @@ from app.config.settings import AppSettings, get_settings
 from app.infrastructure.eventing.relay import OutboxRelay, build_event_bus
 from app.infrastructure.messaging.publisher import LoggingEventPublisher
 from app.infrastructure.observability.logging import configure_logging
+from app.infrastructure.observability.sentry import configure_sentry
 from app.infrastructure.observability.tracing import configure_tracing
 from app.infrastructure.persistence.session import create_engine, create_session_factory
 from app.infrastructure.persistence.unit_of_work import SqlAlchemyUnitOfWork
@@ -34,6 +35,8 @@ from app.presentation.api.v1.workflows import router as workflows_router
 
 def create_app(settings: AppSettings | None = None) -> FastAPI:
     settings = settings or get_settings()
+    # Initialize error tracking before anything else so early failures are caught.
+    configure_sentry(settings.observability, settings.environment)
     configure_logging(settings.log_level)
 
     @asynccontextmanager
