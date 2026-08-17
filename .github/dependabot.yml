@@ -1,0 +1,13 @@
+# Free on all repositories including private. Weekly dependency + action updates.
+version: 2
+updates:
+  - package-ecosystem: pip
+    directory: /services/control-api
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5

@@ -1,0 +1,71 @@
+# Staging pipeline. Runs the full gate, then optionally deploys to a staging
+# backend if a staging deploy hook is configured. Staging surfaces on the free
+# tier are primarily Vercel PR previews (automatic) and a Neon branch database;
+# a standing separate staging backend is not free, so the deploy step no-ops
+# gracefully when no staging hook is set.
+name: staging
+
+on:
+  workflow_dispatch: {}
+  push:
+    branches: [develop, staging]
+
+concurrency:
+  group: staging-deploy
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: services/control-api
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install
+        run: pip install -e ".[dev]"
+      - name: Lint
+        run: ruff check .
+      - name: Type check
+        run: mypy app
+      - name: Test
+        run: pytest -m "not integration"
+
+  deploy-staging:
+    needs: validate
+    runs-on: ubuntu-latest
+    environment: staging
+    steps:
+      - name: Trigger staging deploy (if configured)
+        env:
+          HOOK: ${{ secrets.RENDER_STAGING_DEPLOY_HOOK_URL }}
+        run: |
+          if [ -z "$HOOK" ]; then
+            echo "No RENDER_STAGING_DEPLOY_HOOK_URL set."
+            echo "Staging surfaces: Vercel PR previews + a Neon branch database."
+            exit 0
+          fi
+          curl -fsSL -X POST "$HOOK" -o /dev/null -w "staging deploy: %{http_code}\n"
+
+      - name: Smoke test staging (if URL configured)
+        env:
+          BASE: ${{ secrets.STAGING_API_URL }}
+        run: |
+          if [ -z "$BASE" ]; then
+            echo "No STAGING_API_URL set; skipping staging smoke test."
+            exit 0
+          fi
+          for i in $(seq 1 40); do
+            code="$(curl -s -o /dev/null -w '%{http_code}' "$BASE/readyz" || true)"
+            echo "attempt $i: readyz=$code"
+            [ "$code" = "200" ] && exit 0
+            sleep 15
+          done
+          echo "staging backend did not become healthy" >&2
+          exit 1
