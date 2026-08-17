@@ -18,11 +18,12 @@ jobs:
     steps:
       - name: Install PostgreSQL client 18
         run: |
-          sudo install -d /usr/share/postgresql-common/pgdg
-          curl -fsSL https://www.postgresql.org/media/keys/ACCC4CF8.asc \
-            | sudo gpg --dearmor -o /usr/share/postgresql-common/pgdg/apt.postgresql.org.gpg
-          sudo sh -c 'echo "deb [signed-by=/usr/share/postgresql-common/pgdg/apt.postgresql.org.gpg] http://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" > /etc/apt/sources.list.d/pgdg.list'
+          # Use PGDG's official setup script (non-interactive) so we get a
+          # pg_dump matching the Neon server major. Avoids manual gpg --dearmor,
+          # which fails on CI runners with a /dev/tty error.
           sudo apt-get update
+          sudo apt-get install -y postgresql-common
+          sudo /usr/share/postgresql-common/pgdg/apt.postgresql.org.sh -y
           sudo apt-get install -y postgresql-client-18
           /usr/lib/postgresql/18/bin/pg_dump --version
 
@@ -42,9 +43,8 @@ jobs:
           url="$(printf '%s' "$url" | sed -E 's/([?&])channel_binding=[^&]*//; s/[?&]$//')"
           ts="$(date -u +%Y%m%dT%H%M%SZ)"
           out="conductor-${ts}.dump"
-          # Put the freshly installed client 18 first on PATH; the base image
-          # ships an older pg_dump at /usr/bin that would otherwise win and fail
-          # on the newer server version.
+          # Put client 18 first on PATH; the base image ships an older pg_dump
+          # at /usr/bin that would otherwise win and fail on the newer server.
           export PATH="/usr/lib/postgresql/18/bin:$PATH"
           pg_dump --version
           # Custom format (-Fc): compressed and restorable with pg_restore.
