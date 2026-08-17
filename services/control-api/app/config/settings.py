@@ -19,6 +19,10 @@ class DatabaseSettings(BaseSettings):
     pool_timeout_seconds: int = 30
     pool_recycle_seconds: int = 1800
     echo: bool = False
+    # Enable TLS to the database. Required by managed Postgres (e.g. Neon).
+    # SSL is applied via connect_args; libpq-style query params in the URL
+    # (sslmode, channel_binding) are stripped since asyncpg rejects them.
+    ssl: bool = False
 
 
 class ObservabilitySettings(BaseSettings):

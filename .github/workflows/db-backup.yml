@@ -1,0 +1,51 @@
+# Free daily database backup: pg_dump to a GitHub Actions artifact.
+# $0 substitute for managed point-in-time recovery. Complements Neon branching.
+name: db-backup
+
+on:
+  schedule:
+    - cron: "0 6 * * *" # daily at 06:00 UTC
+  workflow_dispatch: {} # allow manual runs
+
+concurrency:
+  group: db-backup
+  cancel-in-progress: false
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Install PostgreSQL client 17
+        run: |
+          sudo sh -c 'echo "deb http://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" \
+            > /etc/apt/sources.list.d/pgdg.list'
+          curl -fsSL https://www.postgresql.org/media/keys/ACCC4CF8.asc \
+            | sudo gpg --dearmor -o /etc/apt/trusted.gpg.d/pgdg.gpg
+          sudo apt-get update
+          sudo apt-get install -y postgresql-client-17
+
+      - name: Dump database
+        env:
+          # Raw Neon connection string in libpq form (postgresql://...), NOT the
+          # +asyncpg app URL. pg_dump understands sslmode=require directly.
+          DATABASE_URL: ${{ secrets.NEON_DATABASE_URL }}
+        run: |
+          if [ -z "$DATABASE_URL" ]; then
+            echo "NEON_DATABASE_URL secret is not set" >&2
+            exit 1
+          fi
+          ts="$(date -u +%Y%m%dT%H%M%SZ)"
+          out="conductor-${ts}.dump"
+          # Custom format (-Fc): compressed and restorable with pg_restore.
+          pg_dump "$DATABASE_URL" --no-owner --no-privileges -Fc -f "$out"
+          ls -lh "$out"
+          echo "BACKUP_FILE=$out" >> "$GITHUB_ENV"
+
+      - name: Upload backup artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: conductor-db-backup-${{ github.run_id }}
+          path: ${{ env.BACKUP_FILE }}
+          retention-days: 30
+          if-no-files-found: error

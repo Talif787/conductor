@@ -37,6 +37,9 @@ services:
       # Set in the Render dashboard (secret). Neon URL with the +asyncpg scheme.
       - key: CONDUCTOR_DB_URL
         sync: false
+      # Neon requires TLS. Strips libpq params and enables SSL via connect_args.
+      - key: CONDUCTOR_DB_SSL
+        value: "true"
       # Optional: restrict CORS if the browser calls the API directly.
       # JSON array, e.g. ["https://your-app.vercel.app"].
       - key: CONDUCTOR_CORS_ALLOW_ORIGINS
