@@ -1,0 +1,13 @@
+# Copy to terraform.tfvars and fill in. terraform.tfvars is gitignored.
+# Tokens are NOT set here; export them as environment variables instead:
+#   export GITHUB_TOKEN=...          # repo + admin:repo_hook
+#   export CLOUDFLARE_API_TOKEN=...  # only if enable_dns = true
+
+github_owner  = "Talif787"
+backend_repo  = "conductor"
+frontend_repo = "conductor-web"
+
+# DNS is off by default (free platform subdomains). Set true only with a domain.
+enable_dns         = false
+cloudflare_zone_id = "<CLOUDFLARE_ZONE_ID>"
+render_hostname    = "<conductor-api.onrender.com>"
