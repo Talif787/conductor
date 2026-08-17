@@ -1,0 +1,7 @@
+# GIT-0004: signed-commit enforcement on branch protection.
+# Deliberately not required for this single-author portfolio repository.
+# Signed commits defend against commit forgery in multi-contributor settings;
+# for a solo repo the benefit does not justify the GPG/SSH key-management
+# overhead, and enforcing it would block routine solo merges to main.
+# Conscious risk acceptance, revisit if the project gains contributors.
+GIT-0004
