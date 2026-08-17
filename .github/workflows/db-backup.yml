@@ -16,29 +16,39 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
-      - name: Install PostgreSQL client 17
+      - name: Install PostgreSQL client 18
         run: |
-          sudo sh -c 'echo "deb http://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" \
-            > /etc/apt/sources.list.d/pgdg.list'
+          sudo install -d /usr/share/postgresql-common/pgdg
           curl -fsSL https://www.postgresql.org/media/keys/ACCC4CF8.asc \
-            | sudo gpg --dearmor -o /etc/apt/trusted.gpg.d/pgdg.gpg
+            | sudo gpg --dearmor -o /usr/share/postgresql-common/pgdg/apt.postgresql.org.gpg
+          sudo sh -c 'echo "deb [signed-by=/usr/share/postgresql-common/pgdg/apt.postgresql.org.gpg] http://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" > /etc/apt/sources.list.d/pgdg.list'
           sudo apt-get update
-          sudo apt-get install -y postgresql-client-17
+          sudo apt-get install -y postgresql-client-18
+          /usr/lib/postgresql/18/bin/pg_dump --version
 
       - name: Dump database
         env:
           # Raw Neon connection string in libpq form (postgresql://...), NOT the
-          # +asyncpg app URL. pg_dump understands sslmode=require directly.
+          # +asyncpg app URL. Keep sslmode=require; channel_binding is stripped.
           DATABASE_URL: ${{ secrets.NEON_DATABASE_URL }}
         run: |
           if [ -z "$DATABASE_URL" ]; then
             echo "NEON_DATABASE_URL secret is not set" >&2
             exit 1
           fi
+          # Tolerate a stray trailing newline in the secret, and drop the
+          # channel_binding param (pg_dump rejects it on some client builds).
+          url="$(printf '%s' "$DATABASE_URL" | tr -d '[:space:]')"
+          url="$(printf '%s' "$url" | sed -E 's/([?&])channel_binding=[^&]*//; s/[?&]$//')"
           ts="$(date -u +%Y%m%dT%H%M%SZ)"
           out="conductor-${ts}.dump"
+          # Put the freshly installed client 18 first on PATH; the base image
+          # ships an older pg_dump at /usr/bin that would otherwise win and fail
+          # on the newer server version.
+          export PATH="/usr/lib/postgresql/18/bin:$PATH"
+          pg_dump --version
           # Custom format (-Fc): compressed and restorable with pg_restore.
-          pg_dump "$DATABASE_URL" --no-owner --no-privileges -Fc -f "$out"
+          pg_dump "$url" --no-owner --no-privileges -Fc -f "$out"
           ls -lh "$out"
           echo "BACKUP_FILE=$out" >> "$GITHUB_ENV"
 
