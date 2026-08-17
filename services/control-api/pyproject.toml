@@ -8,6 +8,7 @@ version = "1.0.0"
 description = "Control plane for the Conductor Agentic AI Workflow Automation Platform."
 requires-python = ">=3.12"
 dependencies = [
+    "sentry-sdk>=2.0",
     "fastapi>=0.111",
     "uvicorn[standard]>=0.30",
     "gunicorn>=22.0",
@@ -74,5 +75,5 @@ filterwarnings = [
     # Starlette's TestClient emits this through httpx; the suggested "httpx2"
     # package does not exist, so this third-party deprecation is not actionable
     # at our layer. Ignore it rather than let it clutter the test output.
-    "ignore:Using .httpx. with .starlette.testclient. is deprecated",
+    "ignore:Using .httpx. with .starlette.testclient. is deprecated:DeprecationWarning",
 ]

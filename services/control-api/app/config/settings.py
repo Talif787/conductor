@@ -31,6 +31,8 @@ class ObservabilitySettings(BaseSettings):
     service_name: str = "conductor-control-api"
     otlp_endpoint: str | None = None
     traces_enabled: bool = True
+    # Sentry error tracking. Set CONDUCTOR_OTEL_SENTRY_DSN to enable; unset = off.
+    sentry_dsn: str | None = None
 
 
 class AuthSettings(BaseSettings):
