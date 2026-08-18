@@ -15,28 +15,55 @@ cd ~/conductor/services/control-api
 
 Git commands are the exception: run those from anywhere inside `~/conductor`.
 
+Always activate the virtual environment first in a new shell, or commands fall
+back to the system Python and fail with missing modules:
+
+```
+source ~/conductor/.venv/bin/activate
+```
+
 ## Local quality gate
 
-Before pushing, run the same gate CI runs. Tests use in-memory adapters, so no
-database is required:
+Before pushing, run the same gate CI runs. The default test suite uses in-memory
+adapters, so no database is required:
 
 ```
-make test        # pytest
-make lint        # ruff
-make typecheck   # mypy
-make fmt         # ruff auto-fix and format (run before committing)
+make fmt        # ruff auto-fix and format (run before committing)
+make lint       # ruff
+make typecheck  # mypy
+make test       # pytest (unit; in-memory adapters)
 ```
 
-All three must be green. If `make lint` reports something after `make fmt`, run
+All must be green. If `make lint` reports something after `make fmt`, run
 `make fmt` once more, since one fix can expose another (for example, an import
 that becomes unused).
 
-Some bugs only appear against a real database or the real logger, since the
-default test suite substitutes in-memory adapters. When you touch persistence,
-messaging, or anything at the infrastructure edge, also run the service against
-Postgres and exercise the affected path by hand (see
-`services/control-api/docs/PHASE1_RUNBOOK.md`). A Postgres-backed integration
-test suite is planned to close this gap.
+### Integration tests (Postgres-backed)
+
+A Postgres-backed integration suite now exists and runs in CI. Some bugs only
+appear against a real database (for example, a missing table or a driver-level
+connection issue), which the in-memory suite cannot catch. When you touch
+persistence, messaging, migrations, or anything at the infrastructure edge, run
+it locally against Postgres:
+
+```
+docker compose up -d --wait postgres
+alembic upgrade head
+make test-integration
+```
+
+If auth or data endpoints return a 500 with `relation "..." does not exist`, the
+database is empty or unmigrated; run `alembic upgrade head` and confirm the app
+and alembic point at the same database (a stray `CONDUCTOR_DB_URL` in the shell
+can split them).
+
+### Security scanning
+
+CI runs Trivy (dependencies, IaC, secrets), gitleaks (secret scan), and Bandit
+(Python SAST) on every pull request, and Dependabot proposes weekly updates. A
+failing security job is a real finding: fix the vulnerability or secret, or add a
+justified entry to `.trivyignore` with a comment explaining the risk acceptance.
+Do not merge past a security failure without addressing it.
 
 ## Branch strategy
 
@@ -56,6 +83,19 @@ git switch main && git pull
 
 Branch name prefixes: `feat/`, `fix/`, `chore/`, `docs/`, `ci/`, `refactor/`,
 `test/`.
+
+### Branch protection
+
+`main` is protected: the `quality` and `integration` CI checks must pass, and one
+approving review is required. On a solo repository you cannot approve your own
+pull request, so merge with admin bypass:
+
+```
+gh pr merge <n> --squash --delete-branch --admin
+```
+
+If `gh` reports "Resource not accessible by personal access token," a Terraform
+`GITHUB_TOKEN` is shadowing your login; run `unset GITHUB_TOKEN` and retry.
 
 ## Commit messages
 
@@ -94,4 +134,7 @@ others through APIs or events, never by reaching across tables.
 
 Keep pull requests focused on a single change. A PR should pass the full quality
 gate locally before you open it, include tests for new behavior, and update the
-relevant documentation when behavior or setup changes.
+relevant documentation when behavior or setup changes. Changes that affect
+deployment, environment variables, or operations should also update the relevant
+file under docs/deployment/ (DEPLOYMENT, RUNBOOK, ENVIRONMENT_VARIABLES, and so
+on).
